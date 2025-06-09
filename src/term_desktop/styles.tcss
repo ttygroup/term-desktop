@@ -1,0 +1,72 @@
+Screen { 
+    layout: horizontal;
+    align: center middle;
+    # background: ansi_default;
+}
+MainScreen { 
+    background: rgba(0, 0, 0, 0.0);
+    layout: horizontal;
+}
+
+#main_desktop { 
+    width: 1fr; height: 1fr;
+    align: center middle;
+    # background: transparent;
+}
+StartButton { 
+    width: 5; height: 1;
+    content-align: center middle;
+    padding: 0 1;
+    &:hover { background: $panel-lighten-3; }
+    &.pressed { background: $primary; color: $text; }     
+}
+#start_menu {
+    width: 30; height: 20;
+    background: $panel;
+    border: $panel-lighten-1 outer;
+    # padding: 0;
+}
+#start_menu_list { 
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+#start_menu_list { scrollbar-size: 0 1; }
+
+FileExplorer {
+    width: 28; height: auto;
+    background: $surface;
+    border-right: outer $panel; 
+}
+#explorer_title {
+    color: $primary;
+    background: $boost;
+    padding: 0 1;
+}
+#my_tree { 
+    width: 1fr; height: 3fr;
+    # padding: 1 0 0 0;
+    # border-right: wide $boost;
+    border-title-color: $primary;
+    # overflow-x: hidden;
+    scrollbar-size: 0 1;
+}
+
+#taskfile_title {margin: 0 0 1 0;}
+
+
+#my_static { width: auto; margin: 1 }
+
+#test_window { min-width: 20; min-height: 15; }
+
+#explorer_container {
+    width: 1fr; height: 3fr;
+    # align: center middle;
+    # background: $surface;
+}
+
+#explorer_info {
+    height: 1fr;
+    align: center middle;
+    background: $surface;
+}
