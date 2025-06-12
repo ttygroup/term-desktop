@@ -2,26 +2,24 @@
 
 # python standard library imports
 from __future__ import annotations
-
-# from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
+from typing import TYPE_CHECKING, cast #, Type #, Any
 if TYPE_CHECKING:
-    # from textual.widgets.directory_tree import DirEntry
-    from textual.visual import VisualType
     from textual.app import ComposeResult
-    import textual.events as events  
+from pathlib import Path
+
+    # import textual.events as events
+    # from textual.visual import VisualType    
+    # from textual.widgets.directory_tree import DirEntry
     # from textual.css.query import QueryType
 
+# from dataclasses import dataclass
 
 # Textual imports
-from textual import on  # , work
+from textual import on, events  # , work
 from textual.app import App
 from textual.widgets import (
-    Header,
     DirectoryTree,
-    OptionList,
+    # OptionList,
     # Static,
     # Button,
 )
@@ -32,6 +30,8 @@ from textual.containers import (
 )
 from textual.binding import Binding
 from textual.signal import Signal
+from textual.screen import Screen
+import rich.repr
 
 # from textual.widget import Widget
 # from rich.text import Text
@@ -40,99 +40,59 @@ from textual.signal import Signal
 
 # Textual library imports
 from textual_pyfiglet import FigletWidget
-from textual_window import WindowBar, WindowSwitcher #, Window
-from textual_slidecontainer import SlideContainer
+from textual_window import WindowBar, WindowSwitcher
+# from textual_slidecontainer import SlideContainer
 
-# Local imports
-from term_desktop.common import NoSelectStatic, CurrentPath
-from term_desktop.datawidgets import DataWidgetsContainer
-from term_desktop.core import StartMenu, FileExplorer
-from term_desktop.messages import (ToggleStartMenu, ToggleWindowSwitcher, ToggleWindowBar,)
-from term_desktop.apps import (
-    Notepad,
-    # TaskfileWindow,
+#################
+# Local imports #
+#################
+from term_desktop.appbase import TermDApp
+from term_desktop.common import (
+    CurrentPath,
+    RegisteredApps,
+    AppInstanceCounter,
+)
+from term_desktop.core import (
+    StartMenu,
+    TaskBar,
+    FileExplorer,
+    AppChooser,
+    AppLoader,
+)
+from term_desktop.messages import (
+    ToggleStartMenu,
+    ToggleExplorer,
+    ToggleWindowBar,    
+    ToggleWindowSwitcher,
 )
 
-class StartButton(NoSelectStatic):
-
-    def __init__(self, content: VisualType, window_bar: WindowBar, **kwargs: Any):
-        super().__init__(content=content, **kwargs)
-        self.window_bar = window_bar
-        self.click_started_on: bool = False
-
-    def on_mouse_down(self, event: events.MouseDown) -> None:
-
-        if event.button == 1:  # left click
-            self.add_class("pressed")
-        elif event.button == 2 or event.button == 3:  # middle or right click
-            self.add_class("right_pressed")
-        self.click_started_on = True
-
-    async def on_mouse_up(self, event: events.MouseUp) -> None:
-
-        self.remove_class("pressed")
-        self.remove_class("right_pressed")
-        if self.click_started_on:
-            if event.button == 1:  # left click
-                self.post_message(ToggleStartMenu())
-            elif event.button == 2 or event.button == 3:  # middle or right click
-                # self.show_popup()
-                pass
-            self.click_started_on = False
-
-    def on_leave(self, event: events.Leave) -> None:
-
-        self.remove_class("pressed")
-        self.remove_class("right_pressed")
-        self.click_started_on = False
-
-    # @work
-    # async def show_popup(self) -> None:
-
-    #     absolute_offset = self.screen.get_offset(self)
-    #     await self.app.push_screen_wait(
-    #         WindowBarMenu(
-    #             menu_offset=absolute_offset,
-    #             dock=self.window_bar.dock,
-    #             window=self.window,
-    #         )
-    #     )
 
 
-class TermDesktop(App[None]):
-
-    TITLE = "Term-Desktop"
-    CSS_PATH = "styles.tcss"
+class MainScreen(Screen[None]):
 
     BINDINGS = [
-        Binding("f4", "toggle_startmenu", "Quick Launcher"),
-        Binding("ctrl+e", "toggle_windowbar", "Window Bar"),
-        Binding("f1", "toggle_windowswitcher", "Window Switcher"),
-        Binding("f2", "toggle_explorer", "File Explorer"),
+        Binding("f1", "toggle_startmenu", "Quick Launcher"),
+        Binding("f2", "toggle_explorer", "File Explorer"),        
+        Binding("f3", "toggle_windowbar", "Window Bar"),
+        Binding("f4", "toggle_windowswitcher", "Window Switcher"),
     ]
-
-    def __init__(self):
-        super().__init__()
-        self.path_changed_signal: Signal[Path] = Signal(self, "path-changed")
 
     def compose(self) -> ComposeResult:
 
-        #########################
-        ### INVISIBLE WIDGETS ###
-        
-        with DataWidgetsContainer():
-            yield CurrentPath()
-        yield WindowSwitcher()
+        ##############################
+        ### SCREEN PUSHING WIDGETS ###
+        yield WindowSwitcher(cycle_key="f4")
 
-        #########################
-        
-        yield FileExplorer()  
-        yield StartMenu()        
-        yield WindowBar(start_open=True)    # windowbar must go before header
-        yield Header(show_clock=True)      
+        ######################
+        ### DOCKED WIDGETS ###
+        yield FileExplorer()   
+        yield StartMenu()     
+        yield TaskBar(start_open=True)  # taskbar must go before header
+        # yield Header(show_clock=True)
 
+        ###############
+        ### DESKTOP ###
         with Container(id="main_desktop"):
-
             yield FigletWidget(
                 "Term - Desktop",
                 font="dos_rebel",
@@ -140,20 +100,7 @@ class TermDesktop(App[None]):
                 animate=True,
                 horizontal=True,
                 id="background_figlet",
-            )
-
-    async def on_mount(self) -> None:
-
-        windowbar = self.query_one(WindowBar)
-
-        await windowbar.mount(
-            StartButton(
-                content="🚀",
-                window_bar=windowbar,
-                id="start_button",
-            ),
-            before=self.query_one("#windowbar_button_left"),
-        )
+            )   
 
     #########################
     # ~ Actions and Events~ #
@@ -169,54 +116,146 @@ class TermDesktop(App[None]):
         """Toggle the visibility of the window switcher."""
         self.query_one(WindowSwitcher).show()
 
+    @on(ToggleExplorer)
+    def action_toggle_explorer(self) -> None:
+        """Toggle the visibility of Slide Menu 1."""
+        explorer = self.query_one(FileExplorer)
+        explorer.toggle()
+
     @on(ToggleStartMenu)
     def action_toggle_startmenu(self) -> None:
-        """Toggle the visibility of the start menu."""
-        slide_menu = self.query_one("#start_menu", SlideContainer)
-        slide_menu.toggle()
+        """Open the start menu / quick launcher."""
+        self.query_one(StartMenu).toggle()
+        
 
-    @on(SlideContainer.SlideCompleted, "#start_menu")
-    def slide_completed_startmenu(self, event: SlideContainer.SlideCompleted) -> None:
-        """Handle the slide completion event."""
-        if event.state:
-            event.container.query_one(OptionList).focus()
-        else:
-            event.container.query_children().blur()
+    def on_click(self, event: events.Click):
 
-    @on(SlideContainer.SlideCompleted, "#file_explorer")
-    def slide_completed_explorer(self, event: SlideContainer.SlideCompleted) -> None:
-        """Handle the slide completion event."""
-        if event.state:
-            event.container.query_one(DirectoryTree).focus()
-        else:
-            event.container.query_children().blur()
+        start_menu = self.query_one(StartMenu)
+        if not start_menu.state:
+            return
+        if event.widget:
+            if event.widget is not self.query_one(StartMenu) and \
+            event.widget is not self.query_one(TaskBar).query_one("#start_button") and \
+            event.widget not in start_menu.query().results():
+                self.action_toggle_startmenu()
 
     @on(DirectoryTree.FileSelected)
     def file_selected(self, event: DirectoryTree.FileSelected) -> None:
 
-        current_path = self.query_one(CurrentPath).path
+        file_path = self.app.query_one(CurrentPath).path
+        if file_path:
+            self.app.push_screen(AppChooser(file_path))
+
+
+    @on(StartMenu.AppSelected)
+    def app_selected(self, event: StartMenu.AppSelected) -> None:
+        """Handle app selection from various sources."""
+
+        def get_lowest_available_number(used_numbers: set[int]) -> int:
+            i = 1
+            while i in used_numbers:
+                i += 1
+            return i        
+
+        self.log(f"App selected: {event.app_id}")
+        registered_apps = self.app.query_one(RegisteredApps)
+
+        AppClass = registered_apps[event.app_id]
+        self.log(f"Mounting app with display name: {AppClass.APP_NAME}")
+
+        instance_counter = self.app.query_one(AppInstanceCounter)
+        try:
+            current_set = instance_counter[event.app_id]
+        except KeyError:
+            instance_counter[event.app_id] = set()
+            current_set = instance_counter[event.app_id]
+
+        lowest_available_number = get_lowest_available_number(current_set)
+        current_set.add(lowest_available_number)
+
+        if lowest_available_number == 1:
+            app_id = f"{event.app_id}"
+        else:
+            app_id = f"{event.app_id}_{lowest_available_number}"
+
+        self.log.debug(f"Creating new app instance with ID: {app_id}")
         main_desktop = self.query_one("#main_desktop")
-        main_desktop.mount(Notepad(current_path=current_path))
+        main_desktop.mount(AppClass(id=app_id, instance_number=lowest_available_number))
 
-    # @on(DirectoryTree.DirectorySelected)
-    # def node_selected(self, event: DirectoryTree.NodeExpanded[DirEntry]) -> None:
+    @on(TermDApp.Closed)
+    def termd_app_closed(self, event: TermDApp.Closed) -> None:
+        """Handle the closing of a TermD App (aka a window)."""
 
-    #     if event.node.data:
-    #         path = event.node.data.path
-    #         self.log(path)
-    #         self.query_one(CurrentPath).path = path
-    #         # self.query_one(TaskfileWindow).update_path()
+        termdapp = cast(TermDApp, event.window)
+        assert termdapp.APP_ID, f"{termdapp} does not have an APP_ID set."
+        instance_counter = self.app.query_one(AppInstanceCounter)
+        current_set = instance_counter[termdapp.APP_ID]
+        current_set.remove(termdapp.instance_number)
 
-    def action_toggle_explorer(self) -> None:
-        """Toggle the visibility of Slide Menu 1."""
-        explorer = self.query_one(FileExplorer)
-        explorer.toggle()            
+        self.log.debug(
+            f"App closed - ID: {termdapp.APP_ID} \n"
+            f"Instance Number: {termdapp.instance_number}  \n"
+            f"Current Set: {current_set}"
+        )
+
+class DataWidgetsContainer(Container):
+
+    def __init__(self) -> None:
+        super().__init__(id="datawidgets_container")
+        self.display = False
+
+    def __rich_repr__(self) -> rich.repr.Result:
+        yield "DataWidgetsContainer"
+
+class TermDesktop(App[None]):
+
+    TITLE = "Term-Desktop"
+    CSS_PATH = "styles.tcss"
+
+    SCREENS = {
+        "main": MainScreen,
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.path_changed_signal: Signal[Path] = Signal(self, "path-changed")
+        self.app_loader = AppLoader()
+        # self.loader = AppLoader([Path_instance, Path_instance])   # or specify additional directories
+
+    def compose(self) -> ComposeResult:
+
+        ##############################
+        ### INVISIBLE DATA WIDGETS ###
+        ##############################
+        with DataWidgetsContainer():
+            yield CurrentPath()
+            yield RegisteredApps()
+            yield AppInstanceCounter()
+
+        # These 'data widgets' all have display set to False, and have no compose methods.
+        # They could actually be placed into a screen if I wanted to, they will effectively
+        # be hidden background components whereever they are mounted.
+        # But in this case I do actually want them on the App class itself and not
+        # on the main screen so that they are easily queryable from anywhere in the app.
+
+    async def on_mount(self) -> None:
+        self.push_screen("main")
+        self.call_after_refresh(self.load_apps)
+
+    # * called by on_mount, above
+    def load_apps(self):
+
+        incoming_registered_apps = self.app_loader.discover_apps()
+        registered_apps = self.query_one(RegisteredApps)
+        registered_apps.update(incoming_registered_apps)
+
+        main_screen = self.get_screen("main", MainScreen)   # type: ignore ( BUG IN TEXTUAL )
+        main_screen.query_one(StartMenu).load_registered_apps(registered_apps)  
 
 
 ####################
 # ~ Run function ~ #
 ####################
-
 
 def run():
     TermDesktop().run()

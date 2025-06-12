@@ -2,27 +2,29 @@
 
 See ListDataWidget class for more details."""
 
+# python imports
 from __future__ import annotations
-from typing import Any, Generic, TypeVar, Iterator, List
-from textual.containers import Container
+from typing import (
+    Any,
+    Generic,
+    TypeVar,
+    List,
+    Dict,
+    Iterator,
+    ItemsView,
+    KeysView,
+    ValuesView,
+)
 
-import rich.repr
+# Textual imports
 from textual.widget import Widget
 from textual.message import Message
-
-
-class DataWidgetsContainer(Container):
-
-    def __init__(self) -> None:
-        super().__init__(id="datawidgets_container")
-        self.display = False
-
-    def __rich_repr__(self) -> rich.repr.Result:
-        yield "DataWidgetsContainer"
-
+import rich.repr
 
 
 T = TypeVar("T")
+
+
 class ListDataWidget(Widget, Generic[T]):
     """ListDataWidget is a simple list-like widget for Textual.
     This is only used by the demo app, not by the FigletWidget.
@@ -113,3 +115,51 @@ class ListDataWidget(Widget, Generic[T]):
 
     def copy(self) -> List[T]:
         return self.items.copy()
+
+
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class DictDataWidget(Widget, Generic[K, V]):
+
+    store: Dict[K, V] = {}
+
+    def __init__(self):
+        super().__init__()
+        self.display = False  # <-- This keeps it hidden in the DOM
+        self.store = {}  #      <-- Initialize a fresh dictionary for each instance
+
+    def __getitem__(self, key: K) -> V:
+        return self.store[key]
+
+    def __setitem__(self, key: K, value: V) -> None:
+        self.store[key] = value
+
+    def __delitem__(self, key: K) -> None:
+        del self.store[key]
+
+    def __contains__(self, key: object) -> bool:
+        return key in self.store
+
+    def __len__(self) -> int:
+        return len(self.store)
+
+    def __iter__(self) -> Iterator[K]:
+        return iter(self.store)
+
+    def keys(self) -> KeysView[K]:
+        return self.store.keys()
+
+    def values(self) -> ValuesView[V]:
+        return self.store.values()
+
+    def items(self) -> ItemsView[K, V]:
+        return self.store.items()
+
+    def update(self, other_dict: Dict[K, V]) -> None:
+        self.store.update(other_dict)
+
+    def get(self, key: K, default: Any = None) -> V | Any:
+        return self.store.get(key, default)

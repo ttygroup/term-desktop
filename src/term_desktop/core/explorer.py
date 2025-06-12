@@ -3,19 +3,21 @@
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from textual.widgets.directory_tree import DirEntry
 
 # Textual imports
 from textual import on  # , work
-from textual.widgets import Static, DirectoryTree, Button
+from textual.widgets import Static, DirectoryTree #, Button
 from textual.containers import Vertical
 
 # Textual library imports
 from textual_slidecontainer import SlideContainer
 
 # Local imports
-from term_desktop.common import CurrentPath
+from term_desktop.common import CurrentPath #, SimpleButton
+
 
 class FileExplorer(SlideContainer):
 
@@ -29,32 +31,33 @@ class FileExplorer(SlideContainer):
 
     def compose(self):
 
-        # with Vertical(id="explorer_container"):
         yield Static("File Explorer", id="explorer_title")
         self.dir_tree = DirectoryTree(
-            "/home/devuser/workspace/vscode-projects/",
-            id="my_tree",
+            "/home/",
+            id="explorer_tree",
         )
         yield self.dir_tree
         self.dir_tree.border_title = "Explorer"
 
         with Vertical(id="explorer_info"):
-            yield Static("Hello, Textual!", id="my_static")
-            yield Button("Close", id="close_button")
+            yield Static("Explorer Info Here", id="explorer_info_text")
 
-    @on(Button.Pressed, "#close_button")
-    def close_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle the close button press event."""
-        self.state = False
+    def on_mount(self) -> None:
+
+        # Disable all the children so that they can't be focused while the explorer is closed.
+        self.query().set(disabled=True)
+
+
+    def watch_state(self, old_state: bool, new_state: bool) -> None:
+        if new_state == old_state:
+            return
+        if new_state is True:
+            self.query().set(disabled=False)
+            self._slide_open()
+        else:
+            self._slide_closed()
 
     @on(DirectoryTree.FileSelected)
-    def file_selected(self, event: DirectoryTree.FileSelected) -> None:
-
-        if event.node.data:
-            path = event.node.data.path
-            self.log(path)
-            self.app.query_one(CurrentPath).path = path
-
     @on(DirectoryTree.DirectorySelected)
     def node_selected(self, event: DirectoryTree.NodeExpanded[DirEntry]) -> None:
         self.log("Detected directory selection")
@@ -63,3 +66,11 @@ class FileExplorer(SlideContainer):
             path = event.node.data.path
             self.log(path)
             self.app.query_one(CurrentPath).path = path
+
+    @on(SlideContainer.SlideCompleted)
+    def slide_completed_explorer(self, event: SlideContainer.SlideCompleted) -> None:
+        """Handle the slide completion event."""
+        if event.state:
+            self.query_one(DirectoryTree).focus()
+        else:
+            self.query().set(disabled=False)

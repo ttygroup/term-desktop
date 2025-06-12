@@ -11,9 +11,9 @@ license = { text = "MIT" }
 keywords = ["python", "textual", "tui", "window", "widget"]
 dependencies = [
     "textual>=3.2.0",
-    "textual-pyfiglet>=0.8.5",
-    "textual-slidecontainer>=0.4.0",
-    "textual-window>=0.3.2",
+    "textual-pyfiglet>=0.8.6",
+    "textual-slidecontainer>=0.4.1",
+    "textual-window>=0.3.4",
 ]
 
 classifiers = [

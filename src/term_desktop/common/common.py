@@ -1,7 +1,16 @@
-from textual.widget import Widget
-import rich.repr
-from textual.widgets import Static
+# python
+from typing import Type
 from pathlib import Path
+
+# Textual
+from textual.widget import Widget
+from textual.widgets import Static
+import rich.repr
+
+# Local
+from term_desktop.common import DictDataWidget
+from term_desktop.appbase import TermDApp
+
 
 
 class NoSelectStatic(Static):
@@ -11,6 +20,15 @@ class NoSelectStatic(Static):
     def allow_select(self) -> bool:
         return False
     
+
+class RegisteredApps(DictDataWidget[str, Type[TermDApp]]):
+    pass
+
+
+class AppInstanceCounter(DictDataWidget[str, set[int]]):
+    pass
+
+
 class CurrentPath(Widget):
     """A widget to display the current path."""
 
@@ -20,4 +38,5 @@ class CurrentPath(Widget):
         self.display = False
 
     def __rich_repr__(self) -> rich.repr.Result:
-        yield str(self.path)
+        yield str(self.path)      
+
