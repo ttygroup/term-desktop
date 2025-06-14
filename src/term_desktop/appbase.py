@@ -7,12 +7,14 @@ from typing import Callable, Optional, Any
 # Textual imports
 from textual.message import Message
 from textual.widget import Widget
+
 # import textual.events as events
 # from textual.widget import Widget
 
 # Textual library imports
 from textual_window import Window
 from textual_window.window import MODE, STARTING_HORIZONTAL, STARTING_VERTICAL
+
 
 class TermDApp(Window):
 
@@ -23,9 +25,8 @@ class TermDApp(Window):
     """
 
     # The following must be overridden in the app using this class:
-    APP_NAME: str | None = None  
-    APP_ID: str | None = None  
-      
+    APP_NAME: str | None = None
+    APP_ID: str | None = None
 
     class StartApp(Message):
         """Posted when an app is either mounted or restarted. \n
@@ -56,29 +57,28 @@ class TermDApp(Window):
         menu_options: dict[str, Callable[..., Optional[Any]]] | None = None,
         animated: bool = True,
         show_title: bool = True,
-        disabled: bool = False,            
+        disabled: bool = False,
     ) -> None:
         super().__init__(
             *children,
-            id = id,
-            mode = mode,
-            icon = icon,
-            classes = classes,
-            name = name,
-            starting_horizontal = starting_horizontal,
-            starting_vertical = starting_vertical,
-            start_open = start_open,
-            start_snapped = start_snapped,
-            allow_resize = allow_resize,
-            allow_maximize = allow_maximize,
-            menu_options = menu_options,
-            animated = animated,
-            show_title = show_title,
-            disabled = disabled,
+            id=id,
+            mode=mode,
+            icon=icon,
+            classes=classes,
+            name=name,
+            starting_horizontal=starting_horizontal,
+            starting_vertical=starting_vertical,
+            start_open=start_open,
+            start_snapped=start_snapped,
+            allow_resize=allow_resize,
+            allow_maximize=allow_maximize,
+            menu_options=menu_options,
+            animated=animated,
+            show_title=show_title,
+            disabled=disabled,
         )
 
         self.instance_number = instance_number
-
 
     @classmethod
     def validate_interface(cls):

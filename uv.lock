@@ -801,6 +801,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "textual" },
+    { name = "textual-autocomplete" },
     { name = "textual-pyfiglet" },
     { name = "textual-slidecontainer" },
     { name = "textual-window" },
@@ -816,10 +817,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "textual", specifier = ">=3.2.0" },
+    { name = "textual", specifier = ">=3.3.0" },
+    { name = "textual-autocomplete", specifier = ">=4.0.4" },
     { name = "textual-pyfiglet", specifier = ">=0.8.6" },
-    { name = "textual-slidecontainer", specifier = ">=0.4.1" },
-    { name = "textual-window", specifier = ">=0.3.4" },
+    { name = "textual-slidecontainer", specifier = ">=0.4.2" },
+    { name = "textual-window", specifier = ">=0.3.5" },
 ]
 
 [package.metadata.requires-dev]
@@ -843,6 +845,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6d/96/02751746cf6950e9e8968186cb42eed1e52d91e2c80cc52bb19589e25900/textual-3.3.0.tar.gz", hash = "sha256:aa162b92dde93c5231e3689cdf26b141e86a77ac0a5ba96069bc9547e44119ae", size = 1618996, upload-time = "2025-06-01T14:01:40.336Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/78/c2/c8be0b51bfce3278e057e1563a477bf128097bf5ce82ab21b0bbbcb30986/textual-3.3.0-py3-none-any.whl", hash = "sha256:463809791fd2c979c91ff0b54e25f2e57874828815e51a6503f32cb2e21e4eb0", size = 687997, upload-time = "2025-06-01T14:01:37.654Z" },
+]
+
+[[package]]
+name = "textual-autocomplete"
+version = "4.0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "textual" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7a/cf/9cf23ac193c70e7b0a6999dc9409650e9ab9960b1be167e7dda54f1028a8/textual_autocomplete-4.0.4.tar.gz", hash = "sha256:0969987b90a53c1f75753dfe3ad2c7ea0d974b5839dc2a00a2d332c000057871", size = 94120, upload-time = "2025-03-23T23:36:59.707Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/de/ac2027c20f6f047abaf89da06bedbe6ee54616ffa8d92b6ea43f23f2266d/textual_autocomplete-4.0.4-py3-none-any.whl", hash = "sha256:c37b389cd7f682442aeae15667bf315d382a8968b0e022dd032a8eb8ae2777e5", size = 15846, upload-time = "2025-03-23T23:36:58.51Z" },
 ]
 
 [[package]]
@@ -894,26 +909,26 @@ wheels = [
 
 [[package]]
 name = "textual-slidecontainer"
-version = "0.4.1"
+version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "textual" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/20/fa3f5571c9ad0aecf33c867930b676093d156a7f6f272a3683ad1430bf3c/textual_slidecontainer-0.4.1.tar.gz", hash = "sha256:ae422400af8b2b1c830c73fc681e08cb766ddaa0fd1e36caaaf6cdcf16b66131", size = 146287, upload-time = "2025-06-10T10:06:42.224Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/55/c0/1e01083c2d6f9a662de7bee815d069b0afddd3cdfadffe6f308f3e1d12a8/textual_slidecontainer-0.4.2.tar.gz", hash = "sha256:ec208feda88a9571fadfdab34bad7d9d589e7fa52d39a45dd0ca52ad639e7b53", size = 146540, upload-time = "2025-06-14T14:19:29.887Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/bb/798d85dd7ccca2d62356f7793a50e363ddabd71439a967c64e4982aba4f7/textual_slidecontainer-0.4.1-py3-none-any.whl", hash = "sha256:3178522b12305cb2390374fd76a2891b81856846175774a9c20bf926509dcd7b", size = 8975, upload-time = "2025-06-10T10:06:40.41Z" },
+    { url = "https://files.pythonhosted.org/packages/63/c4/4be776b24591acbcd4b8aa94575fdb3d384c0843f1a49ffd700c3a4000cb/textual_slidecontainer-0.4.2-py3-none-any.whl", hash = "sha256:eccc20d306a34d85322502a58896608768449808ca94d41679fb7d5d24c9ff9c", size = 9199, upload-time = "2025-06-14T14:19:28.666Z" },
 ]
 
 [[package]]
 name = "textual-window"
-version = "0.3.4"
+version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "textual" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/bb/3eb4c7457990c494e1a3481cf35350496886a9e31acdfb9257ac49ef4d2b/textual_window-0.3.4.tar.gz", hash = "sha256:382d35a7977d56d7321ea881371aa31915d8c9fa3af356872d92653a18b959f5", size = 94461, upload-time = "2025-06-11T12:17:29.451Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c5/00/218f7d2f07ff245b52957b63eb8a66864cf6e3799e75d5469493d7b9a862/textual_window-0.3.5.tar.gz", hash = "sha256:fe4611f482a6e9340f5fc486318640c494c1a933ea14e1af1d2d8d11fb4f8857", size = 94714, upload-time = "2025-06-14T03:33:21.543Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/10/5f8ddcdda6ea61b9f35173aa3bc93787c38cc7d1c6a6405ed511f71b372a/textual_window-0.3.4-py3-none-any.whl", hash = "sha256:81e69eca930f452a82b6fed675f07b01ca5c00e6f64b4714f21c2ee129a6b4cd", size = 28021, upload-time = "2025-06-11T12:17:28.444Z" },
+    { url = "https://files.pythonhosted.org/packages/92/de/09692b347f4a130a9adfffe5b206aa792537d007bab18c3dd5f550f46a6b/textual_window-0.3.5-py3-none-any.whl", hash = "sha256:c145f91dc1e5cc94b71f2a9012a174da614a76226ddd9008f19e20c6b77f3847", size = 28229, upload-time = "2025-06-14T03:33:20.29Z" },
 ]
 
 [[package]]

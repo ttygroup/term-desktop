@@ -29,29 +29,50 @@ StartMenu {
 FileExplorer {
     width: 28; height: auto;
     background: $surface;
-    border-right: outer $panel; 
-    & > #explorer_title {
-        color: $primary;
-        background: $boost;
-        padding: 0 1;
+    border-right: outer $panel;
+    & > Vertical {
+        & > .explorer_top {
+            padding: 0 1;
+        }
+        & > DirectoryTree { 
+            width: 1fr; height: 3fr;
+            border-title-color: $primary;
+            overflow-x: auto;
+            scrollbar-size: 1 1;
+            background: $boost;
+        }    
+        & > ExplorerInfo {
+            width: 1fr; height: 1fr;
+            align: left top;
+            background: $surface;
+            border: round $panel;
+            overflow-x: auto;
+            # padding: 0 1;
+            & > InfoItem { 
+                width: auto; height: 1;
+                # border-left: heavy red;
+                & > #value { color: $primary; }
+                & > Static { width: auto;}
+            }
+        }
+        & > Button {
+            width: 1fr;
+            &:hover { background: $primary-darken-2; }
+            &:focus {
+                background: $primary-darken-2;
+                text-style: none;
+            }
+        }
     }
-    & > #explorer_tree { 
-        width: 1fr; height: 3fr;
-        # padding: 1 0 0 0;
-        # border-right: wide $boost;
-        border-title-color: $primary;
-        # overflow-x: hidden;
-        scrollbar-size: 0 1;
-    }    
-    & > #explorer_info {
-        height: 1fr;
-        align: center middle;
-        background: $surface;
-        border: round $panel;
-        margin: 0 0 1 0;
-        & > #explorer_info_text { width: 1fr; height: 1fr; }
-        & > #close_button { width: 10; height: 1; }
-    }
+}
+
+ExplorerPathBar {
+    width: 1fr; height: 2;
+    background: $surface;
+    padding: 0 1;
+    align: center top;
+    dock: bottom;
+    # & > Input { width: 1fr; }
 }
 
 AppChooser { 

@@ -29,8 +29,8 @@ class Template(TermDApp):
     # APP_NAME = "Template"   # For display purposes, it can have spaces and special characters.
     # APP_ID = "template"     # For internals. The same as `id` in any widget.
 
-    APP_NAME = None           # The validation will fail if either of these are not set.
-    APP_ID = None   
+    APP_NAME = None  # The validation will fail if either of these are not set.
+    APP_ID = None
 
     DEFAULT_CSS = """
     Template {
@@ -47,23 +47,22 @@ class Template(TermDApp):
         Binding("ctrl+w", "close_window", "Close Window", priority=True),
         Binding("ctrl+d", "minimize_window", "Minimize Window", priority=True),
         # You can remove the above bindings if you dont want them.
-        # Note that `close_window` and `minimize_window` are already defined in the base 
+        # Note that `close_window` and `minimize_window` are already defined in the base
         # Textual-Window library, but the base class does not have priority set to True.
         # Priority will make close and minimize shortcuts work even when you have focus
         # on children inside of the window, like TextArea or Input widgets.
-
         # Add any additional bindings you need here.
     ]
 
     def __init__(self, id: str, **kwargs: Any):
-        super().__init__(       #! Note you cant set id here. It must be set using APP_ID above.
-            id=id,              # it must be taken as an argument and passed to super().__init__.
-            start_open=True,            # The app sets the window IDs and manages them.
+        super().__init__(  #! Note you cant set id here. It must be set using APP_ID above.
+            id=id,  # it must be taken as an argument and passed to super().__init__.
+            start_open=True,  # The app sets the window IDs and manages them.
             allow_maximize=True,
             starting_horizontal="centerright",
             starting_vertical="middle",
             # Customize window settings here
-            **kwargs
+            **kwargs,
         )
 
     def compose(self):
@@ -80,10 +79,11 @@ class Template(TermDApp):
     # def on_focus(self) -> None:
     #     self.query_one("#my_static", Static).focus()
 
+
 ##############
 # ~ Loader ~ #
 ##############
-#? This function is used by the app loader to load the app.
+# ? This function is used by the app loader to load the app.
 # It must return the class definition of the app, not an instance.
 # (That is what Type[TermDApp] means in the return type hint.)
 
@@ -92,5 +92,6 @@ class Template(TermDApp):
 # We don't want every app to be booted up along with the desktop environment!
 # Term-Desktop only initializes the class on demand when it needs to.
 
+
 def loader() -> Type[TermDApp]:
-    return Template     #! Replace Template with your app class name.
+    return Template  #! Replace Template with your app class name.

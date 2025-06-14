@@ -5,6 +5,7 @@ An implementation of a classic calculator, with a layout inspired by macOS calcu
 
 Works like a real calculator. Click the buttons or press the equivalent keys.
 """
+
 # Python imports
 from __future__ import annotations
 from typing import Any, Type
@@ -12,6 +13,7 @@ from decimal import Decimal
 
 # Textual imports
 from textual import on, events
+
 # from textual.widgets import Static
 from textual.binding import Binding
 from textual.app import ComposeResult
@@ -29,8 +31,10 @@ from term_desktop.appbase import TermDApp
 
 class Calculator(TermDApp):
 
-    APP_NAME = "Calculator"   # APP_NAME is used for display purposes, it can have spaces and special characters.
-    APP_ID = "calculator"     # APP_ID is used for internals. The same as `id` in any widget.
+    APP_NAME = (
+        "Calculator"  # APP_NAME is used for display purposes, it can have spaces and special characters.
+    )
+    APP_ID = "calculator"  # APP_ID is used for internals. The same as `id` in any widget.
 
     # APP_NAME = None         # The validation will fail if either of these are not set.
     # APP_ID = None           # Try uncommenting these lines to see the validation error.
@@ -94,32 +98,29 @@ class Calculator(TermDApp):
         Binding("ctrl+w", "close_window", "Close Window", priority=True),
         Binding("ctrl+d", "minimize_window", "Minimize Window", priority=True),
         # You can remove the above bindings if you dont want them.
-        # Note that `close_window` and `minimize_window` are already defined in the base 
+        # Note that `close_window` and `minimize_window` are already defined in the base
         # Textual-Window library, but the base class does not have priority set to True.
         # Priority will make close and minimize shortcuts work even when you have focus
         # on children inside of the window, like TextArea or Input widgets.
-
         # Add any additional bindings you need here.
     ]
 
     def __init__(self, id: str, **kwargs: Any):
-        super().__init__(       #! Note, you cannot set the id manually here. It must be set by the app loader.
-            id=id,              # it MUST be taken as an argument and passed to super().__init__.
-            start_open=True,            # The app sets the IDs and manages them.
+        super().__init__(  #! Note, you cannot set the id manually here. It must be set by the app loader.
+            id=id,  # it MUST be taken as an argument and passed to super().__init__.
+            start_open=True,  # The app sets the IDs and manages them.
             allow_maximize=True,
             starting_horizontal="right",
             starting_vertical="bottom",
             # Customize window settings here
-            **kwargs
+            **kwargs,
         )
-
 
     # @on(events.Focus)
     # def on_mount(self) -> None:
     #     # Here you can set which widgets inside the window you would like to gain focus
     #     # when the window is focused or first opened.
     #     self.query_one("#numbers").focus()
-
 
     def compose(self) -> ComposeResult:
         """Add our buttons."""
@@ -145,8 +146,6 @@ class Calculator(TermDApp):
             yield Button("0", id="number-0", classes="number")
             yield Button(".", id="point")
             yield Button("=", id="equals", variant="warning")
-
-
 
     def watch_numbers(self, value: str) -> None:
         """Called when numbers is updated."""
@@ -250,12 +249,14 @@ class Calculator(TermDApp):
             self.right = Decimal(self.value)
         self._do_math()
 
+
 ##############
 # ~ Loader ~ #
 ##############
-#? This function is used by the app loader to load the app.
+# ? This function is used by the app loader to load the app.
 # It must return the class definition of the app, not an instance.
 # (That is what Type[TermDApp] means in the return type hint.)
 
+
 def loader() -> Type[TermDApp]:
-    return Calculator  
+    return Calculator

@@ -1,6 +1,4 @@
-"""Module for the ListDataWidget class.
-
-See ListDataWidget class for more details."""
+"""Module for the DataWidgets classes."""
 
 # python imports
 from __future__ import annotations
@@ -26,21 +24,20 @@ T = TypeVar("T")
 
 
 class ListDataWidget(Widget, Generic[T]):
-    """ListDataWidget is a simple list-like widget for Textual.
-    This is only used by the demo app, not by the FigletWidget.
+    """
+    ListDataWidget is a simple list-like widget for Textual.
 
-    The reason this is in its own module is that its a very useful generic widget,
-    and so I wanted to keep it seperate from the demo app for future reference.
-
-    The reason this exists at all is because it can be queried using Textual's query system.
+    The reason this exists is because it can be queried using Textual's query system.
     This is a better way to store data on the main app class than simply doing something
     like `self.app.my_list_foo`. Type checkers do not like self.app.my_list_foo. (It is
     only determined at runtime). If you've ever tried to do this with your type
     checker in strict mode, you know what I mean.
 
     By making a ListDataWidget and mounting it to the app class (hidden), we can use the
-    query system instead of self.app.my_list_foo. This provides much better type checking
-    and it makes Pyright and MyPy happy without needing to use any '#type: ignore' comments."""
+    query system (self.app.query_one(MyListDataFoo) instead of using self.app.my_list_foo.
+    This provides much better type checking and it makes Pyright and MyPy happy without
+    needing to use any '#type: ignore' comments.
+    """
 
     class Updated(Message):
 
@@ -117,12 +114,25 @@ class ListDataWidget(Widget, Generic[T]):
         return self.items.copy()
 
 
-
 K = TypeVar("K")
 V = TypeVar("V")
 
 
 class DictDataWidget(Widget, Generic[K, V]):
+    """
+    DictDataWidget is a simple dict-like widget for Textual.
+
+    The reason this exists is because it can be queried using Textual's query system.
+    This is a better way to store data on the main app class than simply doing something
+    like `self.app.my_dict_foo`. Type checkers do not like self.app.my_dict_foo. (It is
+    only determined at runtime). If you've ever tried to do this with your type
+    checker in strict mode, you know what I mean.
+
+    By making a DictDataWidget and mounting it to the app class (hidden), we can use the
+    query system (self.app.query_one(MyDictDataFoo) instead of using self.app.my_dict_foo.
+    This provides much better type checking and it makes Pyright and MyPy happy without
+    needing to use any '#type: ignore' comments.
+    """
 
     store: Dict[K, V] = {}
 

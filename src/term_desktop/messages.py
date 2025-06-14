@@ -9,7 +9,7 @@ class ToggleWindowSwitcher(Message):
     """Message to toggle the window switcher."""
 
 
-class ToggleWindowBar(Message):
+class ToggleTaskBar(Message):
     """Message to toggle the window bar."""
 
 

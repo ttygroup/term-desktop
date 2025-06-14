@@ -2,13 +2,15 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING, cast #, Type #, Any
-if TYPE_CHECKING:
-    from textual.app import ComposeResult
+from typing import TYPE_CHECKING, cast  # , Type #, Any
 from pathlib import Path
 
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+    from textual.widgets.directory_tree import DirEntry
+
     # import textual.events as events
-    # from textual.visual import VisualType    
+    # from textual.visual import VisualType
     # from textual.widgets.directory_tree import DirEntry
     # from textual.css.query import QueryType
 
@@ -32,6 +34,7 @@ from textual.binding import Binding
 from textual.signal import Signal
 from textual.screen import Screen
 import rich.repr
+from rich.rule import Rule
 
 # from textual.widget import Widget
 # from rich.text import Text
@@ -40,8 +43,9 @@ import rich.repr
 
 # Textual library imports
 from textual_pyfiglet import FigletWidget
-from textual_window import WindowBar, WindowSwitcher
-# from textual_slidecontainer import SlideContainer
+from textual_window import WindowSwitcher
+
+from textual_slidecontainer import SlideContainer
 
 #################
 # Local imports #
@@ -56,23 +60,23 @@ from term_desktop.core import (
     StartMenu,
     TaskBar,
     FileExplorer,
+    ExplorerPathBar,
     AppChooser,
     AppLoader,
 )
 from term_desktop.messages import (
     ToggleStartMenu,
     ToggleExplorer,
-    ToggleWindowBar,    
+    ToggleTaskBar,
     ToggleWindowSwitcher,
 )
-
 
 
 class MainScreen(Screen[None]):
 
     BINDINGS = [
         Binding("f1", "toggle_startmenu", "Quick Launcher"),
-        Binding("f2", "toggle_explorer", "File Explorer"),        
+        Binding("f2", "toggle_explorer", "File Explorer"),
         Binding("f3", "toggle_windowbar", "Window Bar"),
         Binding("f4", "toggle_windowswitcher", "Window Switcher"),
     ]
@@ -85,10 +89,10 @@ class MainScreen(Screen[None]):
 
         ######################
         ### DOCKED WIDGETS ###
-        yield FileExplorer()   
-        yield StartMenu()     
-        yield TaskBar(start_open=True)  # taskbar must go before header
-        # yield Header(show_clock=True)
+        yield FileExplorer()  # the order these are in is important for the layout
+        yield ExplorerPathBar()
+        yield StartMenu()
+        yield TaskBar(start_open=True)
 
         ###############
         ### DESKTOP ###
@@ -100,16 +104,23 @@ class MainScreen(Screen[None]):
                 animate=True,
                 horizontal=True,
                 id="background_figlet",
-            )   
+            )
 
     #########################
     # ~ Actions and Events~ #
     #########################
 
-    @on(ToggleWindowBar)
+    @on(ToggleTaskBar)
     def action_toggle_windowbar(self) -> None:
         """Toggle the visibility of the window bar."""
-        self.query_one(WindowBar).toggle_bar()
+        self.query_one(TaskBar).toggle_bar()
+
+    @on(TaskBar.DockToggled)
+    def windowbar_dock_toggled(self, event: TaskBar.DockToggled) -> None:
+
+        self.query_one(FileExplorer).shift_ui_for_taskbar(event.dock)
+        self.query_one(ExplorerPathBar).shift_ui_for_taskbar(event.dock)
+        self.query_one(StartMenu).shift_ui_for_taskbar(event.dock)
 
     @on(ToggleWindowSwitcher)
     def action_toggle_windowswitcher(self) -> None:
@@ -120,32 +131,50 @@ class MainScreen(Screen[None]):
     def action_toggle_explorer(self) -> None:
         """Toggle the visibility of Slide Menu 1."""
         explorer = self.query_one(FileExplorer)
+        path_bar = self.query_one(ExplorerPathBar)
         explorer.toggle()
+        path_bar.toggle()
 
     @on(ToggleStartMenu)
     def action_toggle_startmenu(self) -> None:
         """Open the start menu / quick launcher."""
         self.query_one(StartMenu).toggle()
-        
 
-    def on_click(self, event: events.Click):
+    async def on_click(self, event: events.Click):
 
         start_menu = self.query_one(StartMenu)
         if not start_menu.state:
             return
         if event.widget:
-            if event.widget is not self.query_one(StartMenu) and \
-            event.widget is not self.query_one(TaskBar).query_one("#start_button") and \
-            event.widget not in start_menu.query().results():
-                self.action_toggle_startmenu()
+            if (
+                event.widget is not self.query_one(StartMenu)
+                and event.widget is not self.query_one(TaskBar).query_one("#start_button")
+                and event.widget not in start_menu.query().results()
+            ):
+                await self.run_action("toggle_startmenu")
+
+    @on(SlideContainer.SlideCompleted, "FileExplorer")
+    def slide_completed_explorer(self, event: SlideContainer.SlideCompleted) -> None:
+
+        if not event.state:
+            taskbar = self.query_one(TaskBar)
+            taskbar.refresh_buttons()  # this is to fix a graphical glitch.        
 
     @on(DirectoryTree.FileSelected)
     def file_selected(self, event: DirectoryTree.FileSelected) -> None:
 
-        file_path = self.app.query_one(CurrentPath).path
-        if file_path:
-            self.app.push_screen(AppChooser(file_path))
+        if event.node.data:
+            path = event.node.data.path
+            self.app.push_screen(AppChooser(path))
 
+    @on(DirectoryTree.NodeHighlighted)
+    def node_highlighted(self, event: DirectoryTree.NodeHighlighted[DirEntry]) -> None:
+
+        if event.node.data:
+            path_bar = self.query_one(ExplorerPathBar)
+            path_bar.update_path(event.node.data.path)
+        else:
+            self.log.error("Node data is None, cannot update path.")
 
     @on(StartMenu.AppSelected)
     def app_selected(self, event: StartMenu.AppSelected) -> None:
@@ -155,7 +184,7 @@ class MainScreen(Screen[None]):
             i = 1
             while i in used_numbers:
                 i += 1
-            return i        
+            return i
 
         self.log(f"App selected: {event.app_id}")
         registered_apps = self.app.query_one(RegisteredApps)
@@ -198,6 +227,7 @@ class MainScreen(Screen[None]):
             f"Current Set: {current_set}"
         )
 
+
 class DataWidgetsContainer(Container):
 
     def __init__(self) -> None:
@@ -205,7 +235,11 @@ class DataWidgetsContainer(Container):
         self.display = False
 
     def __rich_repr__(self) -> rich.repr.Result:
-        yield "DataWidgetsContainer"
+        # children = self.query_children().results()
+        yield "DataWidgets Container"
+        # for child in children:
+        #     yield child.__rich_repr__() if hasattr(child, "__rich_repr__") else repr(child)
+
 
 class TermDesktop(App[None]):
 
@@ -215,6 +249,10 @@ class TermDesktop(App[None]):
     SCREENS = {
         "main": MainScreen,
     }
+
+    BINDINGS = [
+        Binding("f12", "log_debug_readout", "Log app debug readout to dev console", show=False),
+    ]
 
     def __init__(self):
         super().__init__()
@@ -249,13 +287,27 @@ class TermDesktop(App[None]):
         registered_apps = self.query_one(RegisteredApps)
         registered_apps.update(incoming_registered_apps)
 
-        main_screen = self.get_screen("main", MainScreen)   # type: ignore ( BUG IN TEXTUAL )
-        main_screen.query_one(StartMenu).load_registered_apps(registered_apps)  
+        main_screen = self.get_screen("main", MainScreen)  # type: ignore ( BUG IN TEXTUAL )
+        main_screen.query_one(StartMenu).load_registered_apps(registered_apps)
+
+    def action_log_debug_readout(self) -> None:
+
+        self.log.debug(Rule("Debug Readout"))
+        self.log.debug(self.screen_stack)
+        # This shows all top-level children attached to the app class:
+        children = self.query_children().results()
+        for child in children:
+            self.log.debug(child.tree)
+
+        # This shows all screens and everything else:
+        self.log(self.tree)
+        self.log.debug(Rule("End of Debug Readout"))
 
 
 ####################
 # ~ Run function ~ #
 ####################
+
 
 def run():
     TermDesktop().run()

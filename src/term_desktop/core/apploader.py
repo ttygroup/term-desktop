@@ -1,8 +1,15 @@
 # Python imports
 from __future__ import annotations
 from typing import TYPE_CHECKING, Type, Dict
+
 if TYPE_CHECKING:
     from term_desktop.main import TermDesktop
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from term_desktop.main import TermDesktop
+
 import os
 import importlib.util
 from pathlib import Path
@@ -13,6 +20,7 @@ from textual import log
 # Local imports
 from term_desktop.appbase import TermDApp
 import term_desktop.apps
+
 
 class AppLoader:
 
@@ -44,7 +52,8 @@ class AppLoader:
         if directories:
             self.directories.extend(directories)
 
-    called_by: list[TermDesktop] # load_apps method
+    called_by: list[TermDesktop]  # load_apps method
+
     def discover_apps(self) -> Dict[str, Type[TermDApp]]:
         """
         Scan all app directories for .py files and attempt to load them.
@@ -129,10 +138,8 @@ class AppLoader:
 
         ### ~ Stage 4: Validate the app class interface and return ~ ###
         if not issubclass(AppClass, TermDApp):
-            raise ImportError(
-                "Loader function worked, but the class returned is not a valid TermDApp class"
-            )
-        if not isinstance(AppClass, type): # type: ignore[unused-ignore] Pyright thinks this is unnecessary.
+            raise ImportError("Loader function worked, but the class returned is not a valid TermDApp class")
+        if not isinstance(AppClass, type):  # type: ignore[unused-ignore] Pyright thinks this is unnecessary.
             raise ImportError(
                 f"Loader function for app {path.stem} did not return a class definition."
                 "Ensure that your loader function returns a class definition, not an instance."

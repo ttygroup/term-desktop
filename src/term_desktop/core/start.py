@@ -3,6 +3,7 @@
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from term_desktop.main import TermDesktop
 
@@ -29,17 +30,16 @@ __all__ = [
 class StartMenu(SlideContainer):
 
     class AppSelected(Message):
-        """Posted when an app is selected from the start menu.  
-        Posted by:  
+        """Posted when an app is selected from the start menu.
+        Posted by:
             `StartMenuContainer.option_selected`
         """
-        
+
         def __init__(self, app_id: str):
             super().__init__()
             self.app_id = app_id
             """This will be the key of the app in the RegisteredApps widget, 
-            which will correspond to the app's APP_ID attribute."""   
-
+            which will correspond to the app's APP_ID attribute."""
 
     def __init__(self) -> None:
         super().__init__(
@@ -49,23 +49,26 @@ class StartMenu(SlideContainer):
             fade=True,
             duration=0.4,
         )
-        
-    def compose(self) -> ComposeResult:
-        yield OptionList(id="start_menu_list")     
 
-    called_by: list[TermDesktop] # load_apps method
+        self.taskbar_offset = Offset(0, -1)
+
+    def compose(self) -> ComposeResult:
+        option_list = OptionList(id="start_menu_list")
+        option_list.can_focus = False  # Disable focus until slide is completed
+        yield option_list
+
+    called_by: list[TermDesktop]  # load_apps method
+
     def load_registered_apps(self, registered_apps: RegisteredApps) -> None:
 
         self.log.debug("Loading registered apps into start menu.")
 
-        options = [
-            Option(f"{value.APP_NAME}\n", key) for key, value in registered_apps.items()
-        ]
+        options = [Option(f"{value.APP_NAME}\n", key) for key, value in registered_apps.items()]
         self.query_one(OptionList).add_options(options)
 
     @on(OptionList.OptionSelected)
     async def option_selected(self, event: OptionList.OptionSelected) -> None:
-        
+
         self.log.debug(f"Selected option: {event.option_id}")
         if event.option_id:
             self.post_message(self.AppSelected(event.option_id))
@@ -73,13 +76,15 @@ class StartMenu(SlideContainer):
 
     @on(SlideContainer.SlideCompleted)
     def slide_completed_startmenu(self, event: SlideContainer.SlideCompleted) -> None:
-        
-        if event.state:
-            option_list = event.container.query_one(OptionList)
-            option_list.focus() 
+
+        option_list = event.container.query_one(OptionList)
+        if event.state:    
+            option_list.can_focus = True
+            option_list.focus()
             option_list.action_first()
         else:
-            event.container.query().blur() 
+            option_list.can_focus = False            
+            event.container.query().blur()
 
     #! OVERRIDE
     def _slide_open(self) -> None:
@@ -95,7 +100,7 @@ class StartMenu(SlideContainer):
         self.display = True
         self.animate(
             "offset",
-            Offset(0, -1),  # <-- This line modified from original in SlideContainer
+            value=self.taskbar_offset,  # <-- This line modified from original in SlideContainer
             duration=self.duration,
             easing=self.easing_function,
             on_complete=slide_open_completed,
@@ -103,6 +108,13 @@ class StartMenu(SlideContainer):
         if self.fade:
             self.styles.animate(
                 "opacity", value=1.0, duration=self.duration, easing=self.easing_function
-            )  # reset to original opacity            
+            )  # reset to original opacity
 
+    def shift_ui_for_taskbar(self, dock: str) -> None:
 
+        if dock == "top":
+            self.taskbar_offset = Offset(0, 0)
+        elif dock == "bottom":
+            self.taskbar_offset = Offset(0, -1)
+        else:
+            self.log.error(f"Unknown dock position: {dock}")
