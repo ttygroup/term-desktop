@@ -18,10 +18,10 @@ from textual.geometry import Offset
 
 # Local imports
 from term_desktop.appbase import TermDApp
+
 # from term_desktop.common import SimpleButton
 
 # from term_desktop.datawidgets import CurrentPath
-
 
 
 class CommandBar(Horizontal):
@@ -67,12 +67,7 @@ class CommandBar(Horizontal):
     async def show_popup(self, button: Button) -> None:
 
         absolute_offset = self.screen.get_offset(button)
-        await self.app.push_screen_wait(
-            NotepadMenu(
-                menu_offset=absolute_offset,
-                command_bar=self
-            )
-        )
+        await self.app.push_screen_wait(NotepadMenu(menu_offset=absolute_offset, command_bar=self))
 
     @on(Button.Pressed)
     async def file_button_pressed(self, event: Button.Pressed) -> None:
@@ -80,7 +75,6 @@ class CommandBar(Horizontal):
 
 
 class NotepadMenu(ModalScreen[None]):
-
 
     BINDINGS = [
         Binding("escape", "dismiss", "Dismiss Menu"),
@@ -136,7 +130,7 @@ class NotepadMenu(ModalScreen[None]):
         for button in buttons:
             button.compact = True
 
-        menu.offset = Offset(self.menu_offset.x, self.menu_offset.y + 1) # +1 to go below the button
+        menu.offset = Offset(self.menu_offset.x, self.menu_offset.y + 1)  # +1 to go below the button
 
     def on_mouse_up(self) -> None:
 
@@ -147,7 +141,6 @@ class NotepadMenu(ModalScreen[None]):
 
         if event.button.id == "new_note":
             pass
-
 
 
 class Notepad(TermDApp):
@@ -173,12 +166,7 @@ class Notepad(TermDApp):
     ]
 
     def __init__(self, **kwargs: Any):
-        super().__init__(
-            icon="📝",
-            start_open=True, 
-            allow_maximize=True, 
-            **kwargs
-        )
+        super().__init__(icon="📝", start_open=True, allow_maximize=True, **kwargs)
 
     def compose(self) -> ComposeResult:
 

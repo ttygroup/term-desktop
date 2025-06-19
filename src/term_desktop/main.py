@@ -140,7 +140,8 @@ class MainScreen(Screen[None]):
         """Open the start menu / quick launcher."""
         self.query_one(StartMenu).toggle()
 
-    async def on_click(self, event: events.Click):
+    @on(events.Click)
+    async def handle_click(self, event: events.Click):
 
         start_menu = self.query_one(StartMenu)
         if not start_menu.state:
@@ -158,7 +159,7 @@ class MainScreen(Screen[None]):
 
         if not event.state:
             taskbar = self.query_one(TaskBar)
-            taskbar.refresh_buttons()  # this is to fix a graphical glitch.        
+            taskbar.refresh_buttons()  # this is to fix a graphical glitch.
 
     @on(DirectoryTree.FileSelected)
     def file_selected(self, event: DirectoryTree.FileSelected) -> None:

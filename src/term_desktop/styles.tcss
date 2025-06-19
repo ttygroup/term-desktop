@@ -29,38 +29,56 @@ StartMenu {
 FileExplorer {
     width: 28; height: auto;
     background: $surface;
-    border-right: outer $panel;
-    & > Vertical {
-        & > .explorer_top {
-            padding: 0 1;
-        }
-        & > DirectoryTree { 
-            width: 1fr; height: 3fr;
-            border-title-color: $primary;
-            overflow-x: auto;
-            scrollbar-size: 1 1;
-            background: $boost;
-        }    
-        & > ExplorerInfo {
-            width: 1fr; height: 1fr;
-            align: left top;
-            background: $surface;
-            border: round $panel;
-            overflow-x: auto;
-            # padding: 0 1;
-            & > InfoItem { 
-                width: auto; height: 1;
-                # border-left: heavy red;
-                & > #value { color: $primary; }
-                & > Static { width: auto;}
+    & > Horizontal {
+        & > Vertical {
+            & > .explorer_top {
+                padding: 0 1;
+            }
+            & > DirectoryTree { 
+                width: 1fr; height: 3fr;
+                border-title-color: $primary;
+                overflow-x: auto;
+                scrollbar-size: 0 1;
+                background: $boost;
+            }    
+            & > ExplorerInfo {
+                width: 1fr; height: 1fr;
+                align: left top;
+                background: $surface;
+                border: round $panel;
+                overflow-x: auto;
+                # padding: 0 1;
+                & > InfoItem { 
+                    width: auto; height: 1;
+                    # border-left: heavy red;
+                    & > #value { color: $primary; }
+                    & > Static { width: auto;}
+                }
+            }
+            & > Button {
+                width: 1fr;
+                &:hover { background: $primary-darken-2; }
+                &:focus {
+                    background: $primary-darken-2;
+                    text-style: none;
+                }
+            }
+            & > SpinnerWidget {
+                width: 1fr; height: 1;
+                content-align: center middle;
             }
         }
-        & > Button {
-            width: 1fr;
-            &:hover { background: $primary-darken-2; }
-            &:focus {
-                background: $primary-darken-2;
-                text-style: none;
+        & > ExplorerResizeBar {
+            width: 1; height: 1fr;
+            # background: $panel-lighten-2;
+            border-right: outer $panel;
+            &:hover { 
+                # background: $primary-darken-2; 
+                border-right: outer $primary-darken-2;
+            }
+            &.pressed {   
+                # background: $secondary;
+                border-right: outer $primary-lighten-1;
             }
         }
     }

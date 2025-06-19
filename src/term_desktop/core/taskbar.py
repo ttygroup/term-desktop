@@ -91,6 +91,7 @@ class ExplorerButton(TaskBarButton):
                 pass
             self.click_started_on = False
 
+
 class CommandPaletteButton(TaskBarButton):
 
     def __init__(self, window_bar: WindowBar):

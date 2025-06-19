@@ -78,12 +78,12 @@ class StartMenu(SlideContainer):
     def slide_completed_startmenu(self, event: SlideContainer.SlideCompleted) -> None:
 
         option_list = event.container.query_one(OptionList)
-        if event.state:    
+        if event.state:
             option_list.can_focus = True
             option_list.focus()
             option_list.action_first()
         else:
-            option_list.can_focus = False            
+            option_list.can_focus = False
             event.container.query().blur()
 
     #! OVERRIDE

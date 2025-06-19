@@ -2,28 +2,32 @@
 
 # python standard library imports
 from __future__ import annotations
-# from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any  # , cast
 from pathlib import Path
 import os
 import datetime
 
 # if TYPE_CHECKING:
+    # from textual.visual import VisualType
+
 from textual.widgets.directory_tree import DirEntry
 
 # Textual imports
 from textual import on, work, events
 from textual.app import ComposeResult
-from textual.timer import Timer
-from textual.widgets import Static, DirectoryTree, Input, Tree, Button
+
+# from textual.timer import Timer
+from textual.geometry import clamp  # , Size
+from textual.widgets import Static, DirectoryTree, Input, Button
 from textual.containers import Container, Horizontal, Vertical
 from textual.binding import Binding
-from textual.widgets._tree import TreeNode #, _TreeLine  # type: ignore[unused-ignore]
+from textual.widgets._tree import TreeNode  # , _TreeLine  # type: ignore[unused-ignore]
 
 # Textual library imports
 from textual_slidecontainer import SlideContainer
 
 # Local imports
-# from term_desktop.common import SimpleButton
+from term_desktop.common import SpinnerWidget
 
 
 class ExplorerPathBar(SlideContainer):
@@ -54,6 +58,51 @@ class ExplorerPathBar(SlideContainer):
             self.styles.height = 2
         else:
             self.log.error(f"Unknown dock position: {dock}")
+
+
+class ExplorerResizeBar(Static):
+    """A resize bar for the file explorer."""
+
+    def __init__(self, explorer: FileExplorer, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.explorer = explorer
+        self.min_width = 25
+        self.max_width = 80
+        self.tooltip = "<-- Drag to resize -->"
+
+    def on_mouse_move(self, event: events.MouseMove) -> None:
+
+        # App.mouse_captured refers to the widget that is currently capturing mouse events.
+        if self.app.mouse_captured == self:
+
+            total_delta = event.screen_offset - self.position_on_down
+            new_size = self.size_on_down + total_delta
+
+            self.explorer.styles.width = clamp(new_size.width, self.min_width, self.max_width)
+
+            # * Explanation:
+            # Get the absolute position of the mouse right now (event.screen_offset),
+            # minus where it was when the mouse was pressed down (position_on_down).
+            # That gives the total delta from the original position.
+            # Note that this is not the same as the event.delta attribute,
+            # that only gives you the delta from the last mouse move event.
+            # But we need the total delta from the original position.
+            # Once we have that, add the total delta to size of the explorer.
+            # If total_delta is negative, the size will be smaller
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+
+        if event.button == 1:  # left button
+            self.position_on_down = event.screen_offset
+            self.size_on_down = self.explorer.size
+
+            self.add_class("pressed")
+            self.capture_mouse()
+
+    def on_mouse_up(self) -> None:
+
+        self.remove_class("pressed")
+        self.release_mouse()
 
 
 class InfoItem(Horizontal):
@@ -110,61 +159,16 @@ class ExplorerInfo(Container):
 
 class CustomDirectoryTree(DirectoryTree):
 
-    BINDINGS = [
-        Binding("enter", "select_cursor_keypress", "Select", show=False)
-    ]
-
-    def __init__(self, path: str | Path):
-        super().__init__(path=path)
-        self.debounce_timer: Timer | None = None
-    
-    def remove_timer(self) -> None:
-        self.debounce_timer = None
-
-    #! OVERRIDE
-    def action_select_cursor(self) -> None:
-        """Cause a select event for the target node.
-
-        Note:
-            If `auto_expand` is `True` use of this action on a non-leaf node
-            will cause both an expand/collapse event to occur, as well as a
-            selected event.
-        """
-
-        if not self.debounce_timer:
-            self.debounce_timer = self.set_timer(0.2, self.remove_timer)
-            return
-
-        if self.cursor_line < 0:
-            return
-        try:
-            line = self._tree_lines[self.cursor_line]
-        except IndexError:
-            pass
-        else:
-            node = line.path[-1]
-            self.post_message(Tree.NodeSelected(node)) 
-            self.debounce_timer = None 
-
-    # This one is the same as the original that was overridden, but
-    # it is only called when the enter key is pressed.
-    def action_select_cursor_keypress(self) -> None:
-        """Cause a select event for the target node.
-
-        Note:
-            If `auto_expand` is `True` use of this action on a non-leaf node
-            will cause both an expand/collapse event to occur, as well as a
-            selected event.
-        """
-        if self.cursor_line < 0:
-            return
-        try:
-            line = self._tree_lines[self.cursor_line]
-        except IndexError:
-            pass
-        else:
-            node = line.path[-1]
-            self.post_message(Tree.NodeSelected(node))
+    async def _on_click(self, event: events.Click):
+        if event.chain == 1:
+            # single click: prevent default behavior, don't select
+            event.prevent_default()
+            # get currently highlighted line, return -1 if nothing is highlighted:
+            line = event.style.meta.get("line", -1)
+            # if the line is greater than -1, it means a line was clicked
+            if line > -1:
+                self.cursor_line = line  #   highlights the line that was clicked
+                self.hover_line = line
 
 
 class FileExplorer(SlideContainer):
@@ -185,14 +189,19 @@ class FileExplorer(SlideContainer):
 
     def compose(self):
 
-        with Vertical():
-            yield Static("[$primary]File Explorer", classes="explorer_top")
-            yield Static("[italic]Double-click: expand/run", classes="explorer_top")
-            yield CustomDirectoryTree("/home/")
-            yield ExplorerInfo(self)
-            scan_button = Button("Scan Directory (ctrl+s)", id="scan_directory")
-            scan_button.compact = True
-            yield scan_button
+        with Horizontal():
+            with Vertical():
+                yield Static("[$primary]File Explorer", classes="explorer_top")
+                yield Static("[italic]Double-click: expand/run", classes="explorer_top")
+                yield CustomDirectoryTree("/home/")
+                yield ExplorerInfo(self)
+                scan_button = Button("Scan Directory (ctrl+s)", id="scan_directory")
+                scan_button.compact = True
+                yield scan_button
+                scan_spinner = SpinnerWidget(text="Scanning...", id="scan_spinner", mount_running=False)
+                scan_spinner.display = False
+                yield scan_spinner
+            yield ExplorerResizeBar(self)
 
     ####################
     # UI / Focus stuff #
@@ -235,7 +244,7 @@ class FileExplorer(SlideContainer):
             if path in self.file_or_dir_info:
                 info_dict = self.file_or_dir_info[path]
             else:
-                info_dict = await self.get_info_dict(path)
+                info_dict = await self.make_info_dict(path)
                 self.file_or_dir_info[path] = info_dict
 
             info_box.update_info(info_dict)
@@ -245,7 +254,7 @@ class FileExplorer(SlideContainer):
 
         # NOTE: The main app also has its own event handler for this event
         # which is used to update the path bar.
-        
+
         self.highlighted_node = event.node
 
         if event.node.data:
@@ -255,7 +264,7 @@ class FileExplorer(SlideContainer):
             if path in self.file_or_dir_info:
                 info_dict = self.file_or_dir_info[path]
             else:
-                info_dict = await self.get_info_dict(path)
+                info_dict = await self.make_info_dict(path)
                 self.file_or_dir_info[path] = info_dict
 
             info_box.update_info(info_dict)
@@ -264,19 +273,25 @@ class FileExplorer(SlideContainer):
     @work(group="scan_directory", exclusive=False, exit_on_error=False)
     async def action_scan_directory(self) -> None:
 
-        if self.highlighted_node is None or \
-        not self.highlighted_node.data or \
-        not self.highlighted_node.data.path.is_dir():
+        if (
+            self.highlighted_node is None
+            or not self.highlighted_node.data
+            or not self.highlighted_node.data.path.is_dir()
+        ):
             return
-        
-        current_highlighted_node = self.highlighted_node   # store this for comparison
+
+        current_highlighted_node = self.highlighted_node  # store this for comparison
         path = self.highlighted_node.data.path
         info_dict = self.file_or_dir_info[path]  #  get existing info
         info_dict["size"] = "Scanning..."
         info_dict["file_count"] = "Scanning..."
+        # self.query_one("#scan_directory", Button).disabled = True  # disable button while scanning
+        # self.query_one("#scan_directory", Button).label = "Scanning..."
+        self.query_one("#scan_directory", Button).display = False
+        self.query_one("#scan_spinner", SpinnerWidget).resume(show=True)
 
         info_box = self.query_one(ExplorerInfo)
-        info_box.update_info(info_dict) #  updates with the scanning labels
+        info_box.update_info(info_dict)  #  updates with the scanning labels
 
         size_worker = self.get_directory_size(path)
         total_size, file_count = await size_worker.wait()
@@ -284,14 +299,17 @@ class FileExplorer(SlideContainer):
 
         info_dict["size"] = formatted_size
         info_dict["file_count"] = str(file_count)
+        # self.query_one("#scan_directory", Button).disabled = False  # disable button while scanning
+        # self.query_one("#scan_directory", Button).label = "Scan Directory (ctrl+s)"
+        self.query_one("#scan_spinner", SpinnerWidget).pause(hide=True)
+        self.query_one("#scan_directory", Button).display = True        
 
         # check node we just did work on is still highlighted
         if self.highlighted_node != current_highlighted_node:
             self.log.debug("Highlighted node changed during scan, not updating info box.")
             return
-        
-        info_box.update_info(info_dict)        
 
+        info_box.update_info(info_dict)
 
     def format_size(self, size_bytes: int) -> str:
         """Format size in bytes to human readable format."""
@@ -305,7 +323,7 @@ class FileExplorer(SlideContainer):
             return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
 
     @work(thread=True, group="get_directory_size", exclusive=True, exit_on_error=False)
-    def get_directory_size(self, path: Path) -> tuple[int, int]:
+    def get_directory_size_old(self, path: Path) -> tuple[int, int]:
 
         total_size = 0
         file_count = 0
@@ -324,7 +342,56 @@ class FileExplorer(SlideContainer):
 
         return total_size, file_count
 
-    async def get_info_dict(self, path: Path) -> dict[str, str]:
+    @work(thread=True, group="get_directory_size", exclusive=True, exit_on_error=False)
+    def get_directory_size(self, path: Path) -> tuple[int, int]:
+
+        dir_size_map: dict[Path, tuple[int, int]] = {}
+
+        try:
+            for root, dirs, files in os.walk(path, topdown=False):  # bottom-up traversal
+                root_path = Path(root)
+                total_size = 0
+                file_count = 0
+
+                # Count immediate files
+                for file_name in files:
+                    file_path = root_path / file_name
+                    try:
+                        size = file_path.stat().st_size
+                        total_size += size
+                        file_count += 1
+
+                        self.file_or_dir_info[file_path] = {
+                            "size": self.format_size(size),
+                            "file_count": "1",
+                            "type": "file",
+                            "name": file_path.name,
+                        }
+                    except (OSError, PermissionError):
+                        continue
+
+                for subdir_name in dirs:
+                    subdir_path = root_path / subdir_name
+                    sub_size, sub_count = dir_size_map.get(subdir_path, (0, 0))
+                    total_size += sub_size
+                    file_count += sub_count
+
+                dir_size_map[root_path] = (total_size, file_count)
+                self.file_or_dir_info[root_path] = {
+                    "size": self.format_size(total_size),
+                    "file_count": str(file_count),
+                    "type": "directory",
+                    "name": root_path.name,
+                }
+
+        except (OSError, PermissionError):
+            self.log.error(f"Permission denied accessing contents of: {path}")
+
+        # Return only the top-level directory's info
+        top_size, top_count = dir_size_map.get(path, (0, 0))
+        return top_size, top_count
+
+    async def make_info_dict(self, path: Path) -> dict[str, str]:
 
         stat = path.stat()  # Get file stats
         extension = path.suffix or "None"  # File extension
@@ -342,7 +409,7 @@ class FileExplorer(SlideContainer):
 
             info_dict: dict[str, str] = {
                 "name": str(path.name),
-                "type": "File",
+                "type": "file",
                 "extension": extension,
                 "size": size_str,
                 "permissions": oct(stat.st_mode)[-3:],
@@ -355,7 +422,7 @@ class FileExplorer(SlideContainer):
 
             info_dict: dict[str, str] = {
                 "name": str(path.name),
-                "type": "Directory",
+                "type": "directory",
                 "extension": extension,
                 "size": "Not Scanned",  # Placeholder until size is calculated
                 "file_count": "Not Scanned",  # Placeholder until file count is calculated

@@ -1,6 +1,9 @@
 # python
-from typing import Type
+from typing import Type #, TYPE_CHECKING, Any
 from pathlib import Path
+
+# if TYPE_CHECKING:
+#     from rich.console import RenderableType
 
 # Textual
 from textual.widget import Widget
@@ -37,3 +40,4 @@ class CurrentPath(Widget):
 
     def __rich_repr__(self) -> rich.repr.Result:
         yield str(self.path)
+
