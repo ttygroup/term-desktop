@@ -1,18 +1,8 @@
-# python
-from typing import Type #, TYPE_CHECKING, Any
-from pathlib import Path
-
-# if TYPE_CHECKING:
-#     from rich.console import RenderableType
-
 # Textual
-from textual.widget import Widget
 from textual.widgets import Static
-import rich.repr
+from textual.screen import Screen
 
-# Local
-from term_desktop.common import DictDataWidget
-from term_desktop.appbase import TermDApp
+
 
 
 class NoSelectStatic(Static):
@@ -23,21 +13,9 @@ class NoSelectStatic(Static):
         return False
 
 
-class RegisteredApps(DictDataWidget[str, Type[TermDApp]]):
-    pass
+class DummyScreen(Screen[None]):
+    # This exists to force the screen to refresh when toggling the transparency.
+    # It's a bit of a hack, but it works.
 
-
-class AppInstanceCounter(DictDataWidget[str, set[int]]):
-    pass
-
-
-class CurrentPath(Widget):
-
-    def __init__(self) -> None:
-        super().__init__(id="current_path")
-        self.path: Path | None = None
-        self.display = False
-
-    def __rich_repr__(self) -> rich.repr.Result:
-        yield str(self.path)
-
+    def on_mount(self) -> None:
+        self.dismiss()

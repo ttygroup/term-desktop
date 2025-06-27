@@ -21,10 +21,10 @@ import textual.events as events
 # Would go here if you have any
 
 # Local imports
-from term_desktop.appbase import TermDApp
+from term_desktop.app_sdk.appbase import TDEApp
 
 
-class Template(TermDApp):
+class Template(TDEApp):
 
     # APP_NAME = "Template"   # For display purposes, it can have spaces and special characters.
     # APP_ID = "template"     # For internals. The same as `id` in any widget.
@@ -85,7 +85,7 @@ class Template(TermDApp):
 ##############
 # ? This function is used by the app loader to load the app.
 # It must return the class definition of the app, not an instance.
-# (That is what Type[TermDApp] means in the return type hint.)
+# (That is what Type[TDEApp] means in the return type hint.)
 
 # Note that it's very important to the architecture of the app that this
 # loader returns a class definition and not an instance.
@@ -93,5 +93,5 @@ class Template(TermDApp):
 # Term-Desktop only initializes the class on demand when it needs to.
 
 
-def loader() -> Type[TermDApp]:
+def loader() -> Type[TDEApp]:
     return Template  #! Replace Template with your app class name.

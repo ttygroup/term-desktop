@@ -18,3 +18,9 @@
 [ ] Build Resource Monitor app.
 [ ] Desktop icons.
 [ ] Build a way for 'apps' to be entire packages instead of only .py files.
+
+
+Potential future ideas:
+
+- file manager pairs with CLI commands, shows you what mv, cp, and rm actually do
+- A package installer that shows pip install behind the scenes

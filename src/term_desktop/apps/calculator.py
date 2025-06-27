@@ -26,10 +26,10 @@ from textual.widgets import Button, Digits
 # Would go here if you have any
 
 # Local imports
-from term_desktop.appbase import TermDApp
+from term_desktop.app_sdk.appbase import TDEApp
 
 
-class Calculator(TermDApp):
+class Calculator(TDEApp):
 
     APP_NAME = (
         "Calculator"  # APP_NAME is used for display purposes, it can have spaces and special characters.
@@ -255,8 +255,8 @@ class Calculator(TermDApp):
 ##############
 # ? This function is used by the app loader to load the app.
 # It must return the class definition of the app, not an instance.
-# (That is what Type[TermDApp] means in the return type hint.)
+# (That is what Type[TDEApp] means in the return type hint.)
 
 
-def loader() -> Type[TermDApp]:
+def loader() -> Type[TDEApp]:
     return Calculator

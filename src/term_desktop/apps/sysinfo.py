@@ -23,10 +23,10 @@ import textual.events as events
 # Would go here if you have any
 
 # Local imports
-from term_desktop.appbase import TermDApp
+from term_desktop.app_sdk.appbase import TDEApp
 
 
-class SysInfo(TermDApp):
+class SysInfo(TDEApp):
 
     APP_NAME = "SysInfo"
     APP_ID = "sysinfo"
@@ -145,7 +145,7 @@ class SysInfo(TermDApp):
 ##############
 # ? This function is used by the app loader to load the app.
 # It must return the class definition of the app, not an instance.
-# (That is what Type[TermDApp] means in the return type hint.)
+# (That is what Type[TDEApp] means in the return type hint.)
 
 # Note that it's very important to the architecture of the app that this
 # loader returns a class definition and not an instance.
@@ -153,5 +153,5 @@ class SysInfo(TermDApp):
 # Term-Desktop only initializes the class on demand when it needs to.
 
 
-def loader() -> Type[TermDApp]:
+def loader() -> Type[TDEApp]:
     return SysInfo  #! Replace SysInfo with your app class name.

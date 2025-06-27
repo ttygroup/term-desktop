@@ -1,5 +1,6 @@
 # python
-from typing import TYPE_CHECKING, Any
+from typing import Any  # , TYPE_CHECKING
+
 # if TYPE_CHECKING:
 
 
@@ -23,7 +24,7 @@ class SpinnerWidget(Static):
         *args: Any,
         **kwargs: Any,
     ):
-        """Initialize the spinner widget.  
+        """Initialize the spinner widget.
         `python -m rich.spinner` to see all options
 
         Args:
@@ -56,9 +57,8 @@ class SpinnerWidget(Static):
         - runner
         - shark
         - simpleDots
-        - simpleDotsScrolling            
+        - simpleDotsScrolling
         """
-
 
         super().__init__(*args, **kwargs)
 
@@ -89,4 +89,4 @@ class SpinnerWidget(Static):
         else:
             self.interval_timer = self.set_interval(self.interval, self.update_spinner)
         if show:
-            self.display = True            
+            self.display = True

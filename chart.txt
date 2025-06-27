@@ -1,0 +1,27 @@
+ServicesManager
+├── ProcessManager (handles app lifecycle, registration, cleanup)
+├── ClipboardService (shared clipboard across apps)
+├── FileSystemService (file associations, temp files, etc.)
+├── IPCManager (for future subprocess communication)
+├── ConfigurationService (settings, preferences)
+└── ... other services
+
+
+Project Layout:
+
+/src/term_desktop
+├── /app_sdk
+│   ├── __init__.py
+│   └── appbase.py
+├── /apps
+├── /common
+├── /core
+├── /screens
+├── /services
+│   ├── __init__.py
+│   ├── servicebase.py
+│   ├── service_manager.py
+│   └── process_manager.py
+├── __init__.py
+├── main.py
+└── py.typed

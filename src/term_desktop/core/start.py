@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from term_desktop.main import TermDesktop
+    from term_desktop.screens import MainScreen
+    from term_desktop.app_sdk.appbase import TDEApp
+
 
 # Textual imports
 from textual import on  # , work
@@ -17,14 +20,6 @@ from textual.message import Message
 
 # Textual library imports
 from textual_slidecontainer import SlideContainer
-
-# Local imports
-from term_desktop.common import RegisteredApps
-
-
-__all__ = [
-    "StartMenu",
-]
 
 
 class StartMenu(SlideContainer):
@@ -44,6 +39,7 @@ class StartMenu(SlideContainer):
     def __init__(self) -> None:
         super().__init__(
             slide_direction="down",
+            dock_position="bottomleft",
             start_open=False,
             id="start_menu_container",
             fade=True,
@@ -57,14 +53,15 @@ class StartMenu(SlideContainer):
         option_list.can_focus = False  # Disable focus until slide is completed
         yield option_list
 
-    called_by: list[TermDesktop]  # load_apps method
-
-    def load_registered_apps(self, registered_apps: RegisteredApps) -> None:
-
+    def load_registered_apps(self, registered_apps: dict[str, TDEApp]) -> None:
         self.log.debug("Loading registered apps into start menu.")
 
         options = [Option(f"{value.APP_NAME}\n", key) for key, value in registered_apps.items()]
         self.query_one(OptionList).add_options(options)
+
+    #####################
+    # ~ Runtime stuff ~ #
+    #####################
 
     @on(OptionList.OptionSelected)
     async def option_selected(self, event: OptionList.OptionSelected) -> None:
@@ -87,7 +84,7 @@ class StartMenu(SlideContainer):
             event.container.query().blur()
 
     #! OVERRIDE
-    def _slide_open(self) -> None:
+    async def _slide_open(self) -> None:
 
         # This is here just in case anyone calls this method manually:
         if self.state is not True:
@@ -111,6 +108,8 @@ class StartMenu(SlideContainer):
             )  # reset to original opacity
 
     def shift_ui_for_taskbar(self, dock: str) -> None:
+        """Called by [term_desktop.screens.mainscreen.MainScreen.taskbar_dock_toggled]"""
+        jump_clicker: type[MainScreen]  # noqa: F842 # type: ignore
 
         if dock == "top":
             self.taskbar_offset = Offset(0, 0)

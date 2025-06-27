@@ -17,7 +17,7 @@ from textual.geometry import Offset
 # from textual_window.window import TopBar
 
 # Local imports
-from term_desktop.appbase import TermDApp
+from term_desktop.app_sdk.appbase import TDEApp
 
 # from term_desktop.common import SimpleButton
 
@@ -143,7 +143,7 @@ class NotepadMenu(ModalScreen[None]):
             pass
 
 
-class Notepad(TermDApp):
+class Notepad(TDEApp):
 
     APP_NAME = "Notepad"
     APP_ID = "notepad"
@@ -191,5 +191,5 @@ class Notepad(TermDApp):
         self.query_one(CommandBar).remove_class("focused")
 
 
-def loader() -> Type[TermDApp]:
+def loader() -> Type[TDEApp]:
     return Notepad

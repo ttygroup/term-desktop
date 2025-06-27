@@ -1,71 +1,111 @@
 # Python imports
 from __future__ import annotations
 from typing import TYPE_CHECKING, Type, Dict
-
-if TYPE_CHECKING:
-    from term_desktop.main import TermDesktop
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from term_desktop.main import TermDesktop
-
 import os
 import importlib.util
 from pathlib import Path
+if TYPE_CHECKING:
+    from term_desktop.services.servicesmanager import ServicesManager
 
 # Textual imports
 from textual import log
 
 # Local imports
-from term_desktop.appbase import TermDApp
 import term_desktop.apps
+from term_desktop.app_sdk.appbase import TDEApp
+from term_desktop.services.servicebase import BaseService
 
 
-class AppLoader:
 
-    # * Called by: load_apps in TermDesktop class.
-    def __init__(self, directories: list[Path] | None = None) -> None:
+
+class AppLoader(BaseService):
+
+    def __init__(
+            self, 
+            services_manager: ServicesManager, 
+        ) -> None:
         """
         Initialize the app loader with one or more app directories.
 
         Args:
             directories: List of directories to search for app files.
         """
-        super().__init__()
-        self.loaded_apps: Dict[str, Type[TermDApp]] = {}
+        super().__init__(services_manager)
+        self.registered_apps: Dict[str, Type[TDEApp]] = {}
         self.directories: list[Path] = []
 
-        try:
-            pkg_path: list[str] = getattr(term_desktop.apps, "__path__")
-        except AttributeError as e:
-            raise AttributeError(
-                "Could not find the package path for term_desktop.apps. "
-                "Ensure that term_desktop.apps is a valid package."
-            ) from e
+        builtin_apps = next(iter(term_desktop.apps.__path__))
+        self.directories.extend([Path(builtin_apps)])
 
-        default_path = Path(pkg_path[0])
-        if not default_path.exists():
-            raise FileNotFoundError(f"Apps directory not found: {default_path}")
-
-        self.directories.extend([default_path])
-        if directories:
-            self.directories.extend(directories)
-
-    called_by: list[TermDesktop]  # load_apps method
-
-    def discover_apps(self) -> Dict[str, Type[TermDApp]]:
+    def add_directory(self, directory: Path) -> None:
         """
-        Scan all app directories for .py files and attempt to load them.
+        Add a directory to the list of directories to search for app files.
 
+        Args:
+            directory (Path): The directory to add.
+
+        - Function is pure: [no]           
+        """
+        assert isinstance(directory, Path), "directory must be a Path object"
+        if not directory.exists():
+            raise FileNotFoundError(f"Directory does not exist: {directory}")
+        self.directories.append(directory)
+        log.debug(f"Added apps directory: {directory}")
+
+
+    async def start(self) -> bool:
+        """Start the AppLoader service.
+        If it returns True, the self.registered_apps dictionary will be available.
+
+        Raises:
+            RuntimeError: If the app discovery fails or no apps are found.
+        
+        - Function is pure: [no]"""
+        log("Starting AppLoader service")
+
+        try:
+            self.registered_apps = await self.discover_apps(self.directories)
+        except Exception as e:
+            log.error(f"Failed to discover apps: {str(e)}")
+            raise RuntimeError("AppLoader failed to start due to an error.") from e
+        else:
+            if len(self.registered_apps) == 0:
+                log.error("Loader 'worked', but no apps were discovered. Must have malfunctioned.")
+                return False
+            else:
+                log.info(f"Discovered {len(self.registered_apps)} apps")
+                for app_id, app_class in self.registered_apps.items():
+                    log.debug(f"ID: {app_id} - Display Name: {app_class.APP_NAME}")
+            return True
+
+
+    async def stop(self) -> bool:
+        log("Stopping AppLoader service")
+        # There's nothing to do here for now
+        return True
+    
+
+    async def discover_apps(self, directories: list[Path]) -> Dict[str, Type[TDEApp]]:
+        """
+        Scan the provided app directories for apps and attempt to load them.
+        Called by AppLoader.start() (above)
+
+        Args:
+            directories (list[Path]): List of directories to search for app files.
         Returns:
             Dictionary mapping app names to their app classes
+        Raises:
+            FileNotFoundError: If any of the directories do not exist.
+
+        - Function is pure: [✓]   
         """
+
+        #! MUST BE RE-WORKED TO ACCOMODATE PACKAGES INSTEAD OF ONLY .py FILES !!
+
         log.debug("Discovering apps")
+        loaded_apps: Dict[str, Type[TDEApp]] = {}
 
-        self.loaded_apps.clear()
-
-        for directory in self.directories:
+        for directory in directories:
             if not os.path.exists(directory):
                 raise FileNotFoundError(f"Apps directory not found: {directory}")
 
@@ -82,9 +122,9 @@ class AppLoader:
                         log.error(f"Unexpected error loading app {path.name}: {str(e)}")
                         continue
 
-                    assert AppClass.APP_ID is not None  # validated in above method
+                    assert AppClass.APP_ID is not None  # validated by the TDEApp ABC
                     try:
-                        self.loaded_apps[AppClass.APP_ID] = AppClass
+                        loaded_apps[AppClass.APP_ID] = AppClass
                     except KeyError:
                         log.error(
                             f"App was loaded successfully, but app with ID "
@@ -93,19 +133,21 @@ class AppLoader:
                     else:
                         log.debug(f"Loaded app: {AppClass.APP_NAME}")
 
-        return self.loaded_apps
+        return loaded_apps
 
-    # * called_by: AppLoader.discover_apps, above
-    def load_app_class(self, path: Path) -> Type[TermDApp]:
+    def load_app_class(self, path: Path) -> Type[TDEApp]:
         """
         Load an app class from a given path.
+        Called by AppLoader.discover_apps (above)
 
         Args:
             path (Path): Path to the app file.
         Returns:
-            Type[TermDApp]: The loaded app class.
+            Type[TDEApp]: The loaded app class.
         Raises:
             ImportError: If the app class cannot be loaded or does not implement the required interface.
+
+        - Function is pure: [✓]   
         """
 
         ### ~ Stage 1: Load the module spec ~ ###
@@ -137,16 +179,11 @@ class AppLoader:
             raise ImportError(f"App {path.stem} loader function raised an error: {str(e)}") from e
 
         ### ~ Stage 4: Validate the app class interface and return ~ ###
-        if not issubclass(AppClass, TermDApp):
-            raise ImportError("Loader function worked, but the class returned is not a valid TermDApp class")
+        if not issubclass(AppClass, TDEApp):
+            raise ImportError("Loader function worked, but the class returned is not a valid TDEApp class")
         if not isinstance(AppClass, type):  # type: ignore[unused-ignore] Pyright thinks this is unnecessary.
             raise ImportError(
                 f"Loader function for app {path.stem} did not return a class definition."
                 "Ensure that your loader function returns a class definition, not an instance."
             )
-        try:
-            AppClass.validate_interface()  # This is a class method
-        except Exception as e:
-            raise ImportError(f"App {path.stem} does not implement the required interface: {str(e)}") from e
-        else:
-            return AppClass
+        return AppClass
