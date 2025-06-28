@@ -1,6 +1,6 @@
 # Python imports
 from __future__ import annotations
-from typing import TYPE_CHECKING, Type, Dict
+from typing import TYPE_CHECKING, Type
 import os
 import importlib.util
 from pathlib import Path
@@ -16,8 +16,6 @@ from term_desktop.app_sdk.appbase import TDEApp
 from term_desktop.services.servicebase import BaseService
 
 
-
-
 class AppLoader(BaseService):
 
     def __init__(
@@ -25,17 +23,35 @@ class AppLoader(BaseService):
             services_manager: ServicesManager, 
         ) -> None:
         """
-        Initialize the app loader with one or more app directories.
-
-        Args:
-            directories: List of directories to search for app files.
+        Initialize the app loader.
         """
         super().__init__(services_manager)
-        self.registered_apps: Dict[str, Type[TDEApp]] = {}
-        self.directories: list[Path] = []
+        self.directories: list[Path] = []        
+        self._registered_apps: dict[str, Type[TDEApp]] = {}
+        self._failed_apps: dict[str, Exception] = {}
 
         builtin_apps = next(iter(term_desktop.apps.__path__))
         self.directories.extend([Path(builtin_apps)])
+
+    @property
+    def registered_apps(self) -> dict[str, Type[TDEApp]]:
+        """
+        Get the currently registered apps.
+        
+        Returns:
+            dict[str, Type[TDEApp]]: Dictionary mapping app IDs to their app classes.
+        """
+        return self._registered_apps
+
+    @property
+    def failed_apps(self) -> dict[str, Exception]:
+        """
+        Get the apps that failed to load.
+        
+        Returns:
+            dict[str, Exception]: Dictionary mapping app IDs to the exceptions raised during loading.
+        """
+        return self._failed_apps
 
     def add_directory(self, directory: Path) -> None:
         """
@@ -64,14 +80,14 @@ class AppLoader(BaseService):
         log("Starting AppLoader service")
 
         try:
-            self.registered_apps = await self.discover_apps(self.directories)
+            self._registered_apps = await self.discover_apps(self.directories)
         except Exception as e:
             log.error(f"Failed to discover apps: {str(e)}")
             raise RuntimeError("AppLoader failed to start due to an error.") from e
         else:
             if len(self.registered_apps) == 0:
                 log.error("Loader 'worked', but no apps were discovered. Must have malfunctioned.")
-                return False
+                return True
             else:
                 log.info(f"Discovered {len(self.registered_apps)} apps")
                 for app_id, app_class in self.registered_apps.items():
@@ -81,11 +97,11 @@ class AppLoader(BaseService):
 
     async def stop(self) -> bool:
         log("Stopping AppLoader service")
-        # There's nothing to do here for now
+        self.registered_apps.clear()
         return True
     
 
-    async def discover_apps(self, directories: list[Path]) -> Dict[str, Type[TDEApp]]:
+    async def discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEApp]]:
         """
         Scan the provided app directories for apps and attempt to load them.
         Called by AppLoader.start() (above)
@@ -103,7 +119,7 @@ class AppLoader(BaseService):
         #! MUST BE RE-WORKED TO ACCOMODATE PACKAGES INSTEAD OF ONLY .py FILES !!
 
         log.debug("Discovering apps")
-        loaded_apps: Dict[str, Type[TDEApp]] = {}
+        loaded_apps: dict[str, Type[TDEApp]] = {}
 
         for directory in directories:
             if not os.path.exists(directory):
@@ -117,10 +133,14 @@ class AppLoader(BaseService):
                         AppClass = self.load_app_class(path)
                     except ImportError as e:
                         log.error(f"Failed to load app {path.name}: {str(e)}")
+                        self._failed_apps[path.name] = e
                         continue
                     except Exception as e:
                         log.error(f"Unexpected error loading app {path.name}: {str(e)}")
+                        self._failed_apps[path.name] = e
                         continue
+
+                    log(f"Loaded app class: {AppClass.__name__} from {path.name}")
 
                     assert AppClass.APP_ID is not None  # validated by the TDEApp ABC
                     try:
@@ -129,6 +149,9 @@ class AppLoader(BaseService):
                         log.error(
                             f"App was loaded successfully, but app with ID "
                             f"{AppClass.APP_ID} is already registered!"
+                        )
+                        self._failed_apps[path.name] = KeyError(
+                            f"App with ID {AppClass.APP_ID} already registered."
                         )
                     else:
                         log.debug(f"Loaded app: {AppClass.APP_NAME}")
@@ -166,24 +189,16 @@ class AppLoader(BaseService):
         except Exception as e:
             raise ImportError(f"Failed to load module for app {path.stem}: {str(e)}") from e
 
-        ### ~ Stage 3: Retrieve the app class from loader ~ ###
-        if not hasattr(module, "loader"):
-            raise ImportError(
-                f"Module for app {path.stem} does not have a loader function."
-                "You require a function named `loader` at the top level of your module."
-                "Please see the documentation for more info: {INSERT LINK HERE}"
-            )
+        ### ~ Stage 3: Retrieve the app class from module ~ ###
+        # new plan: get dict of all classes in the module, then check for TDEApp subclass
         try:
-            AppClass = module.loader()  # ? Returns Class Definition, NOT an instance.
-        except Exception as e:
-            raise ImportError(f"App {path.stem} loader function raised an error: {str(e)}") from e
-
-        ### ~ Stage 4: Validate the app class interface and return ~ ###
-        if not issubclass(AppClass, TDEApp):
-            raise ImportError("Loader function worked, but the class returned is not a valid TDEApp class")
-        if not isinstance(AppClass, type):  # type: ignore[unused-ignore] Pyright thinks this is unnecessary.
+            AppClass = next(
+                cls for _name_, cls in module.__dict__.items()
+                if isinstance(cls, type) and issubclass(cls, TDEApp) and cls is not TDEApp
+            )
+        except StopIteration:
             raise ImportError(
-                f"Loader function for app {path.stem} did not return a class definition."
-                "Ensure that your loader function returns a class definition, not an instance."
+                f"{path.stem} did not return a valid TDEApp class."
+                "Ensure that your main app class inherits from TDEApp."
             )
         return AppClass

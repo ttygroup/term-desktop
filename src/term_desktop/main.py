@@ -3,8 +3,6 @@
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING  # , cast  # , Type #, Any
-# from pathlib import Path
-
 if TYPE_CHECKING:
     from textual.app import ComposeResult
 

@@ -80,13 +80,13 @@ class TDEApp(ABC):
         raise NotImplementedError("Subclasses must implement the launch_mode @staticmethod.")
 
     @abstractmethod
-    def get_main_content(self) -> Widget | None:
+    def get_main_content(self) -> type[Widget] | None:
         """Returns the class definiton for the main content widget for the app. \n
-
+        Must return a definition of a Widget subclass, not an instance of it.
+        
         If the TDEapp is a normal app (runs in a window or full screen), this must return
-        the main content Widget for your app.
-
-        If the TDEapp is a daemon, this method must return None.
+        the main content Widget for your app. If the TDEapp is a daemon, this method must
+        return None.
         """
         raise NotImplementedError("Subclasses must implement the main_content @staticmethod.")
 

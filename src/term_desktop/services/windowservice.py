@@ -42,13 +42,13 @@ class WindowService(BaseService):
         return True
     
 
-    def register_mounting_callback(self, callback: Callable[[Window], None], id: str) -> None:
+    def register_mounting_callback(self, callback: Callable[[Window], None], callback_id: str) -> None:
         """Register a callback which can be used by the Window Manager to mount windows
         that are passed into it with the `mount_window` method.
         """
-        self.window_manager.register_mounting_callback(callback, id)
+        self.window_manager.register_mounting_callback(callback, callback_id)
 
-    def mount_window(self, window: Window, id: str) -> None:
+    def mount_window(self, window: Window, callback_id: str) -> None:
         """Mount a window using a callback registered with the `register_mounting_callback`
         method.
         This allows the manager to handle the mounting of windows without needing to mount them
@@ -57,7 +57,7 @@ class WindowService(BaseService):
         """
 
         # Mounted windows will register themselves with the window manager automatically.
-        self.window_manager.mount_window(window, id)
+        self.window_manager.mount_window(window, callback_id)
 
     def remove_window(self, window: Window | str) -> None:
         """Unmount a given window and remove it from the window manager.

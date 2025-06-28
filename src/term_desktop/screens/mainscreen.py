@@ -75,7 +75,9 @@ class MainScreen(Screen[None]):
 
     def on_mount(self) -> None:
         services = self.app.query_one(ServicesWidget).services
-        services.window_service.register_mounting_callback(self.mounting_callback, id="main_desktop")
+        services.window_service.register_mounting_callback(
+            self.mounting_callback, callback_id="main_desktop"
+        )
 
     def mounting_callback(self, window: Window) -> None:
         self.query_one(Desktop).mount(window)
