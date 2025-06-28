@@ -1,7 +1,7 @@
 "Services sub-package for TDE"
 
-from term_desktop.services.servicesmanager import ServicesManager
+from term_desktop.services.serviceswidget import ServicesWidget
 
 __all__ = [
-    "ServicesManager",
+    "ServicesWidget",
 ]

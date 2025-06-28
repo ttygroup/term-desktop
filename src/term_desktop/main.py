@@ -2,21 +2,22 @@
 
 # python standard library imports
 from __future__ import annotations
-# from typing import TYPE_CHECKING  # , cast  # , Type #, Any
+from typing import TYPE_CHECKING  # , cast  # , Type #, Any
 # from pathlib import Path
 
-# if TYPE_CHECKING:
-#     from textual.app import ComposeResult
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
 
 # Textual imports
 from textual.app import App
+from textual.containers import Container
 from textual.binding import Binding
 from rich.rule import Rule
 
 #################
 # Local imports #
 #################
-from term_desktop.services import ServicesManager
+from term_desktop.services import ServicesWidget
 from term_desktop.screens import MainScreen
 
 # from term_desktop.app_sdk.appbase import TDEApp
@@ -37,10 +38,20 @@ class TermDesktop(App[None]):
 
     def __init__(self):
         super().__init__()
-        self.services = ServicesManager()
+
+    def compose(self) -> ComposeResult:
+        self.services = ServicesWidget()
+        yield self.services
+
+        loading_screen = Container()
+        loading_screen.loading = True
+        yield loading_screen
         
     async def on_mount(self) -> None:
-        self.push_screen("main")
+
+        self.services.create_services_manager()
+        await self.services.start_services()
+        self.call_after_refresh(self.push_screen, "main")  # push screen after everything is ready
 
     def action_log_debug_readout(self) -> None:
 

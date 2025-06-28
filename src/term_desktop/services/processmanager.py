@@ -2,7 +2,7 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING #, Any
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
     from term_desktop.app_sdk.appbase import TDEApp
@@ -12,7 +12,7 @@ from textual import log
 from term_desktop.services.servicebase import BaseService
 
 # Textual library imports
-from textual_window import Window, window_manager
+from textual_window import Window
 
 # Local imports
 from term_desktop.app_sdk.appbase import (TDEApp, LaunchMode, DefaultWindowSettings,)
@@ -31,8 +31,23 @@ class ProcessManager(BaseService):
             services_manager (ServicesManager): The services manager instance.
         """
         super().__init__(services_manager)
-        self.processes: dict[str, TDEApp] = {}  #! possibly make reactive dict
-        self.window_manager = window_manager
+
+        self._processes: dict[str, TDEApp] = {}  #! possibly make reactive dict
+        self.instance_counter: dict[str, set[int]] = {}  #! possibly make reactive dict
+
+    @property
+    def processes(self) -> dict[str, TDEApp]:
+        """Get the currently running processes."""
+        return self._processes
+    
+    def _add_process_to_dict(self, tde_app_instance: TDEApp, app_id: str) -> None:
+        """Add a process to the manager."""
+
+        if app_id in self._processes:
+            raise RuntimeError(f"Process with ID {app_id} already exists.")
+        
+        self._processes[app_id] = tde_app_instance
+        log(f"Process {tde_app_instance.APP_NAME} with ID {app_id} added.")
 
 
     async def start(self) -> bool:
@@ -45,80 +60,64 @@ class ProcessManager(BaseService):
         # Nothing to do here yet.
         return True
     
-    async def launch_process(
-            self, 
-            TDE_App: type[TDEApp], 
-            *args: Any,
-            **kwargs: Any,
-        ) -> None:
+
+    def _get_app_id_with_num(self, TDE_App: type[TDEApp]) -> str:
+
+        assert TDE_App.APP_ID is not None and TDE_App.APP_NAME is not None
+        try:
+            current_set = self.instance_counter[TDE_App.APP_ID] # get set if exists
+        except KeyError:
+            current_set: set[int] = set()       # if not, make a new set
+            self.instance_counter[TDE_App.APP_ID] = current_set
+
+        i = 1
+        while i in current_set:
+            i += 1
+        current_set.add(i)
+        if i == 1:
+            return f"{TDE_App.APP_ID}"
+        else:
+            return f"{TDE_App.APP_ID}_{i}"        
+
+    
+    async def launch_process(self, TDE_App: type[TDEApp]) -> None:
         """
         Args:
             TDEapp (TDEApp): The app to launch.
-            *args: Positional arguments for the app.
-            **kwargs: Keyword arguments for the app.
         """
         log(f"Launching process for app: {TDE_App.APP_NAME}")
 
         assert TDE_App.APP_NAME is not None # this is already validated by this point
-        assert TDE_App.APP_ID is not None  
+        assert TDE_App.APP_ID is not None
+
+        app_id = self._get_app_id_with_num(TDE_App) 
+        app_process = TDE_App(id=app_id)
+        self._add_process_to_dict(app_process, app_id)
 
 
-
-        # def get_lowest_available_number(used_numbers: set[int]) -> int:
-        #     i = 1
-        #     while i in used_numbers:
-        #         i += 1
-        #     return i
-
-        # self.log(f"App selected: {event.app_id}")
-        # registered_apps = self.app.query_one(RegisteredApps)
-
-        # AppClass = registered_apps[event.app_id]
-        # self.log(f"Mounting app with display name: {AppClass.APP_NAME}")
-
-        # instance_counter = self.app.query_one(AppInstanceCounter)
-        # try:
-        #     current_set = instance_counter[event.app_id]
-        # except KeyError:
-        #     instance_counter[event.app_id] = set()
-        #     current_set = instance_counter[event.app_id]
-
-        # lowest_available_number = get_lowest_available_number(current_set)
-        # current_set.add(lowest_available_number)
-
-        # if lowest_available_number == 1:
-        #     app_id = f"{event.app_id}"
-        # else:
-        #     app_id = f"{event.app_id}_{lowest_available_number}"
-
-        # self.log.debug(f"Creating new app instance with ID: {app_id}")
-
-
-
-        launch_mode = TDE_App.launch_mode
+        launch_mode = app_process.get_launch_mode()
         if launch_mode == LaunchMode.WINDOW:
 
-            main_content = TDE_App.main_content()
+            main_content = app_process.get_main_content()
             if main_content is None:
                 raise RuntimeError(
-                    "The main_content method must return a Widget if your app is not a Daemon"
+                    "The main_content property must return a Widget if your app is not a Daemon"
                 )
-            default_window_settings = TDE_App.default_window_settings()
-            custom_window_settings = TDE_App.custom_window_settings()
+            default_window_settings = app_process.default_window_settings
+            custom_window_settings = app_process.get_custom_window_settings()
             window_settings: DefaultWindowSettings = {
                 **default_window_settings, **custom_window_settings
-            }
-            new_window = Window(
-                main_content,
-                id=TDE_App.APP_ID,     #! Needs instance counter
-                name=TDE_App.APP_NAME,
-                **window_settings
-            )  
+            } 
 
-            # now mount our new window into the main screen.
-
-
-
+            self.services_manager.window_service.mount_window(
+                Window(
+                    main_content,
+                    id=app_id, 
+                    name=app_process.APP_NAME,
+                    **window_settings
+                ), 
+                id="main_desktop"
+            )
 
         elif launch_mode == LaunchMode.FULLSCREEN:
             pass
@@ -128,11 +127,6 @@ class ProcessManager(BaseService):
 
         else:
             raise ValueError(f"Recieved invalid launch mode: {launch_mode}")
-
-
-
-
-        self.processes[app.APP_ID] = app
 
 
 

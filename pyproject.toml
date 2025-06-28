@@ -16,7 +16,7 @@ dependencies = [
     "textual-hires-canvas>=0.8.0",
     "textual-pyfiglet>=0.9.2",
     "textual-slidecontainer>=0.5.2",
-    "textual-window>=0.3.5",
+    "textual-window>=0.4.1",
 ]
 
 classifiers = [

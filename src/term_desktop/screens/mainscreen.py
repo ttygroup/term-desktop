@@ -24,6 +24,7 @@ from textual_slidecontainer import SlideContainer
 # Local imports #
 #################
 # from term_desktop.app_sdk.appbase import TDEApp
+from term_desktop.services import ServicesWidget
 from term_desktop.common import (
     DummyScreen,
 )
@@ -72,12 +73,18 @@ class MainScreen(Screen[None]):
 
         # NOTE: Windows are mounted into the Desktop container.
 
+    def on_mount(self) -> None:
+        services = self.app.query_one(ServicesWidget).services
+        services.window_service.register_mounting_callback(self.mounting_callback, id="main_desktop")
+
+    def mounting_callback(self, window: Window) -> None:
+        self.query_one(Desktop).mount(window)
+
     ###############
     # ~ Actions ~ #
     ###############
 
     def action_toggle_transparency(self) -> None:
-
         self.app.ansi_color = not self.app.ansi_color
         self.app.push_screen(DummyScreen())
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from term_desktop.main import TermDesktop
+    # from term_desktop.main import TermDesktop
     from term_desktop.screens import MainScreen
     from term_desktop.app_sdk.appbase import TDEApp
 
@@ -16,25 +16,15 @@ from textual.app import ComposeResult
 from textual.geometry import Offset
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
-from textual.message import Message
+# from textual.message import Message
 
 # Textual library imports
 from textual_slidecontainer import SlideContainer
 
+# Local imports
+from term_desktop.services import ServicesWidget
 
 class StartMenu(SlideContainer):
-
-    class AppSelected(Message):
-        """Posted when an app is selected from the start menu.
-        Posted by:
-            `StartMenuContainer.option_selected`
-        """
-
-        def __init__(self, app_id: str):
-            super().__init__()
-            self.app_id = app_id
-            """This will be the key of the app in the RegisteredApps widget, 
-            which will correspond to the app's APP_ID attribute."""
 
     def __init__(self) -> None:
         super().__init__(
@@ -46,6 +36,7 @@ class StartMenu(SlideContainer):
             duration=0.4,
         )
 
+        self.registered_apps: dict[str, type[TDEApp]] = {}
         self.taskbar_offset = Offset(0, -1)
 
     def compose(self) -> ComposeResult:
@@ -53,7 +44,12 @@ class StartMenu(SlideContainer):
         option_list.can_focus = False  # Disable focus until slide is completed
         yield option_list
 
-    def load_registered_apps(self, registered_apps: dict[str, TDEApp]) -> None:
+    def on_mount(self) -> None:
+        services = self.app.query_one(ServicesWidget).services
+        self.registered_apps = services.app_loader.registered_apps
+        self.load_registered_apps(self.registered_apps)
+
+    def load_registered_apps(self, registered_apps: dict[str, type[TDEApp]]) -> None:
         self.log.debug("Loading registered apps into start menu.")
 
         options = [Option(f"{value.APP_NAME}\n", key) for key, value in registered_apps.items()]
@@ -66,9 +62,12 @@ class StartMenu(SlideContainer):
     @on(OptionList.OptionSelected)
     async def option_selected(self, event: OptionList.OptionSelected) -> None:
 
-        self.log.debug(f"Selected option: {event.option_id}")
         if event.option_id:
-            self.post_message(self.AppSelected(event.option_id))
+            tde_app_type = self.registered_apps.get(event.option_id)
+            if tde_app_type:
+                self.log.debug(f"Launching app: {tde_app_type.APP_NAME} ({event.option_id})")
+                services = self.app.query_one(ServicesWidget).services
+                await services.process_manager.launch_process(tde_app_type)
             self.close()
 
     @on(SlideContainer.SlideCompleted)
