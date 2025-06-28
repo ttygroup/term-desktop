@@ -54,6 +54,10 @@ class MainScreen(Screen[None]):
         Binding("f12", "toggle_transparency", "Toggle Transparency"),
     ]
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.styles.opacity = 0
+
     def compose(self) -> ComposeResult:
 
         ##############################
@@ -78,6 +82,11 @@ class MainScreen(Screen[None]):
         services.window_service.register_mounting_callback(
             self.mounting_callback, callback_id="main_desktop"
         )
+        # self.call_after_refresh(self.finish_mounting)
+        self.set_timer(0.3, self.finish_mounting)
+
+    def finish_mounting(self) -> None:
+        self.styles.animate("opacity", 1.0, duration=0.5)
 
     def mounting_callback(self, window: Window) -> None:
         self.query_one(Desktop).mount(window)

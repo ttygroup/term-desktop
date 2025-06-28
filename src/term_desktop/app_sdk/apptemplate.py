@@ -1,4 +1,12 @@
-"""Base class for all apps. \n"""
+"""Template file for creating a new TDE app.
+
+This bare-bones template provides a starting point for creating a new app
+using the Term Desktop Environment (TDE) app SDK. It includes a basic
+content widget and the necessary methods to define the app's behavior
+and settings.
+
+#! more instructions here on how to use it
+"""
 
 # Python imports
 from __future__ import annotations
@@ -60,6 +68,8 @@ class Template(TDEApp):
         the main content Widget for your app. If the TDEapp is a daemon, this method must
         return None.
         """
+        # Notice what we're returning is the defintion of the above
+        # TemplateContent class. Do not instantiate it.
         return TemplateContent
 
 

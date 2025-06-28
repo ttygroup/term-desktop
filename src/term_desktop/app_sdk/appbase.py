@@ -16,14 +16,13 @@ from textual_window.window import STARTING_HORIZONTAL, STARTING_VERTICAL, MODE
 
 class LaunchMode(Enum):
     WINDOW = "window"  # Launch in a new window
-    TAB = "tab"  # Launch in a new tab (must implement tabs protocol)
     FULLSCREEN = "fullscreen"  # Launch in fullscreen mode
     DAEMON = "daemon"  # Launch as a background daemon process
 
 
 class CustomWindowSettings(TypedDict, total=False):
-    # width: int
-    # height: int
+    # width: int    # some kind of way to set styles needs to be
+    # height: int   # added to the textual-window library
     mode: MODE
     icon: str | None
     classes: str | None
@@ -40,6 +39,7 @@ class CustomWindowSettings(TypedDict, total=False):
 class DefaultWindowSettings(TypedDict, total=True):
     # width: int
     # height: int
+    name: str | None  #  This is the app name, not the window name.
     mode: MODE
     icon: str | None
     classes: str | None
@@ -68,8 +68,6 @@ class TDEApp(ABC):
 
     APP_NAME: str | None = None
     APP_ID: str | None = None
-    ICON: str = "❓"  #         should possibly just be '?'
-    DESCRIPTION: str = ""
 
     @abstractmethod
     def get_launch_mode(self) -> LaunchMode:
@@ -93,6 +91,9 @@ class TDEApp(ABC):
     ##########################
     # ~ OPTIONAL OVERRIDES ~ #
     ##########################
+
+    ICON: str = "❓"  #         should possibly just be '?'
+    DESCRIPTION: str = ""
 
     def get_custom_window_settings(self) -> CustomWindowSettings:
         """Returns the settings for the window to be created. \n
@@ -126,17 +127,20 @@ class TDEApp(ABC):
     #####################
 
     async def kill(self) -> None:
+        # N/I yet
         pass
 
-    @classmethod
-    def _loader(cls) -> type[TDEApp]:
-        return cls
-
     def __init__(self, id: str) -> None:
+        """The ID is set by the process manager when it initializes the app process.
+        It will append a number to keep track of multiple instances of the same app.
+
+        Note that this is not the same as window number - A single app process instance 
+        can still hypothetically have multiple windows managed by it."""
         self.id = id
 
     def __init_subclass__(cls) -> None:
-        """Additional Validation above what the ABC can provide."""
+        """Additional Validation beyond what the ABC can provide such as validating
+        class attributes."""
 
         required_members = {
             "APP_NAME": "class attribute",
@@ -165,6 +169,7 @@ class TDEApp(ABC):
         return {
             # "width": 45,      # ! not sure width and height should be here
             # "height": 20,
+            "name": cls.APP_NAME,
             "mode": "temporary",
             "icon": cls.ICON,
             "classes": None,

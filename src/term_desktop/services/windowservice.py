@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable #, Any
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
-    from textual.screen import Screen
-    # from term_desktop.app_sdk.appbase import TDEApp
+    from term_desktop.app_sdk.appbase import DefaultWindowSettings
 
 # Textual imports
-# from textual import log
+from textual import log
+from textual.widget import Widget
 from term_desktop.services.servicebase import BaseService
 
 # Textual library imports
@@ -29,41 +29,71 @@ class WindowService(BaseService):
         Initialize the Window Manager Service.
         Note that this is a wrapper around the included window manager from the
         Textual-Window library.
+
+        All of the core window functionality is handled by the Textual-Window library,
+        including the window manager and the window class. This service is a wrapper
+        around the Textual-Window library's window manager, providing a more TDE-specific
+        interface for managing windows in the Term Desktop Environment.
+
+        Windows register themselves automatically with the window manager when they are mounted.
+        The window_manager instance, imported from the Textual-Window library, is a singleton
+        that is attached to all windows and the Taskbar. Being designed as a plugin, it works
+        independently under the hood. By wrapping the window_manager in this service, we can
+        bridge to all the important stuff that we want to do with windows in TDE.
         """
         super().__init__(services_manager)
-        self.window_manager = window_manager
-        self.main_screen: Screen[None] | None = None
-        
+        self.window_manager = window_manager        
 
     async def start(self) -> bool:
+        log("Starting Window service")
+        # nothing to do here yet
         return True
 
     async def stop(self) -> bool:
+        log("Stopping Window service")
+        # nothing to do here yet
         return True
     
 
     def register_mounting_callback(self, callback: Callable[[Window], None], callback_id: str) -> None:
-        """Register a callback which can be used by the Window Manager to mount windows
-        that are passed into it with the `mount_window` method.
+        """This is used by the main screen to register a callback that will be called
+        when a window is mounted.
+
+        Wrapper around the window manager's register_mounting_callback method in
+        the Textual-Window library.
         """
         self.window_manager.register_mounting_callback(callback, callback_id)
 
-    def mount_window(self, window: Window, callback_id: str) -> None:
-        """Mount a window using a callback registered with the `register_mounting_callback`
-        method.
-        This allows the manager to handle the mounting of windows without needing to mount them
-        directly into their destination. If you have a process manager of some sort that creates
-        and manages windows, this allows the process manager to just send them to the window manager.
+    def create_new_window(
+            self, 
+            content_instance: Widget,
+            app_id: str,
+            window_dict: DefaultWindowSettings, 
+            callback_id: str
+        ) -> None:
+        """Pass in all the ingredients to mount a window in the window manager, using the
+        desired callback ID (which was set using the register_mounting_callback method).
+        This is used by the ProcessManager to mount windows for apps that are launched.
+
+        For the forseeable future, there will only be one callback ID, which is the
+        main screen's callback for the desktop. But this system is based on the
+        Textual-Window library, which is designed to work as a plugin and thus
+        be flexible enough to support multiple callback IDs in the future.
         """
 
-        # Mounted windows will register themselves with the window manager automatically.
-        self.window_manager.mount_window(window, callback_id)
+        new_window = Window(content_instance, id=app_id, **window_dict)       
+        self.window_manager.mount_window(new_window, callback_id)
+        # NOTE: Mounted windows will register themselves with the window manager automatically.
 
+    #? This is not yet used by anything yet in TDE land. 
     def remove_window(self, window: Window | str) -> None:
         """Unmount a given window and remove it from the window manager.
         
         Args:
             window: The window to remove. Can be a Window object or the ID of the window.
+        Raises:
+            KeyError: If the window ID is not found in the window manager.
+            ValueError: If the window is not found in the window manager.
         """
         assert (isinstance(window, Window) or isinstance(window, str)), \
             "window must be a Window object or a string representing the window ID."

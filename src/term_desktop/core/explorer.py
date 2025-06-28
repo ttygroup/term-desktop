@@ -165,6 +165,10 @@ class ExplorerInfo(Container):
 
 class CustomDirectoryTree(DirectoryTree):
 
+    def __init__(self, path: str | Path = "/", **kwargs: Any) -> None:
+        super().__init__(path, **kwargs)
+        self.visible = False
+
     async def _on_click(self, event: events.Click):
         if event.chain == 1:
             # single click: prevent default behavior, don't select
@@ -213,6 +217,15 @@ class FileExplorer(SlideContainer):
     # UI / Focus stuff #
     ####################
 
+    #! OVERRIDE
+    def toggle(self) -> None:
+        "Toggle the state of the container. Opens or closes the container."
+        if not self.state:
+            self.query_one(CustomDirectoryTree).visible = True
+            self.state = True
+        else:
+            self.state = False
+
     def on_focus(self) -> None:
         dir_tree = self.query_one(DirectoryTree)
         dir_tree.focus()
@@ -222,6 +235,8 @@ class FileExplorer(SlideContainer):
 
         if event.state:
             self.query_one(DirectoryTree).focus()
+        else:
+            self.query_one(CustomDirectoryTree).visible = False
 
     def shift_ui_for_taskbar(self, dock: str) -> None:
         jump_clicker: type[MainScreen] # .windowbar_dock_toggled()  # noqa: F842 # type: ignore

@@ -2,10 +2,11 @@
 
 # python imports
 from __future__ import annotations
-from typing import Any, Type
+# from typing import Any #, Type
 
 # Textual imports
 from textual import on, events, work
+from textual.widget import Widget
 from textual.app import ComposeResult
 from textual.widgets import TextArea, Button  # , Static
 from textual.containers import Horizontal, Container
@@ -13,15 +14,9 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.geometry import Offset
 
-# Textual library imports
-# from textual_window.window import TopBar
 
 # Local imports
-from term_desktop.app_sdk.appbase import TDEApp
-
-# from term_desktop.common import SimpleButton
-
-# from term_desktop.datawidgets import CurrentPath
+from term_desktop.app_sdk.appbase import (TDEApp, LaunchMode, CustomWindowSettings,)
 
 
 class CommandBar(Horizontal):
@@ -143,38 +138,19 @@ class NotepadMenu(ModalScreen[None]):
             pass
 
 
-class Notepad(TDEApp):
-
-    APP_NAME = "Notepad"
-    APP_ID = "notepad"
+class NotepadWidget(Widget):
 
     DEFAULT_CSS = """
-    Notepad {
-        width: 45; height: 25;
-        margin: 0;
-        & > #content_pane { 
-            padding: 0 0 1 0;
-            & > TextArea { border: none !important; }
-        }       
-    }    
+    TextArea { border: none !important; }
     """
-    BINDINGS = [
-        Binding("ctrl+s", "save", "Save Notepad", priority=True),
-        Binding("ctrl+f", "find", "Find in Notepad"),
-        Binding("ctrl+w", "close_window", "Close Window", priority=True),
-        Binding("ctrl+d", "minimize_window", "Minimize Window", priority=True),
-    ]
-
-    def __init__(self, **kwargs: Any):
-        super().__init__(icon="📝", start_open=True, allow_maximize=True, **kwargs)
 
     def compose(self) -> ComposeResult:
 
+        yield CommandBar()
         yield TextArea()
 
     def on_mount(self) -> None:
 
-        self.mount(CommandBar(), after="TopBar")
         self.query_one(TextArea).focus()
 
     def on_focus(self) -> None:
@@ -191,5 +167,38 @@ class Notepad(TDEApp):
         self.query_one(CommandBar).remove_class("focused")
 
 
-def loader() -> Type[TDEApp]:
-    return Notepad
+class Notepad(TDEApp):
+
+    APP_NAME = "Notepad"
+    APP_ID = "notepad"
+    ICON = "📝"
+    DESCRIPTION = "TDE Notepad, simple text editor for TDE."
+
+    def get_launch_mode(self) -> LaunchMode:
+        """Returns the launch mode for the app. \n
+
+        Must return one of the `LaunchMode` enum values.
+        """
+        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
+
+    def get_main_content(self) -> type[Widget] | None:
+        """Returns the class definiton for the main content widget for the app. \n
+        Must return a definition of a Widget subclass, not an instance of it.
+        
+        If the TDEapp is a normal app (runs in a window or full screen), this must return
+        the main content Widget for your app. If the TDEapp is a daemon, this method must
+        return None.
+        """
+        return NotepadWidget
+
+
+    def get_custom_window_settings(self) -> CustomWindowSettings:
+        """Returns the settings for the window to be created. \n
+
+        This is not part of the contract and not necessary to implement.
+        This method can be optionally implemented to provide custom window settings.
+        """
+        return {
+            # This returns an empty dictionary when not overridden.
+            # see CustomWindowSettings for more options
+        }

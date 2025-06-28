@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 # Textual imports
 from textual.app import App
-from textual.containers import Container
 from textual.binding import Binding
 from rich.rule import Rule
 
@@ -40,10 +39,6 @@ class TermDesktop(App[None]):
     def compose(self) -> ComposeResult:
         self.services = ServicesWidget()
         yield self.services
-
-        loading_screen = Container()
-        loading_screen.loading = True
-        yield loading_screen
         
     async def on_mount(self) -> None:
 

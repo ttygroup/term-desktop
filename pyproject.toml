@@ -59,3 +59,5 @@ line-length = 110
 python_version = "3.10"
 pretty = true
 strict = true
+disallow_untyped_defs = true
+disallow_untyped_calls = true

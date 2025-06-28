@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING #, Any
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
     from term_desktop.app_sdk.appbase import TDEApp, DefaultWindowSettings
+    from textual.widget import Widget
 
 # Textual imports
 from textual import log
 
 # Textual library imports
-from textual_window import Window
+# from textual_window import Window
 
 # Local imports
 from term_desktop.services.servicebase import BaseService
@@ -34,6 +35,7 @@ class ProcessManager(BaseService):
 
         self._processes: dict[str, TDEApp] = {}  #! Make reactive dict
         self._instance_counter: dict[str, set[int]] = {}
+        self._content_instance_dict: dict[str, list[Widget]] = {}  #! Make reactive dict
 
     async def start(self) -> bool:
         log("Starting ProcessManager service")
@@ -95,11 +97,18 @@ class ProcessManager(BaseService):
         assert TDE_App.APP_NAME is not None # this is already validated by this point
         assert TDE_App.APP_ID is not None
 
+        # Get the app ID with a number if needed
+        # This is to handle multiple instances of the same app.
         app_id = self._get_app_id_with_num(TDE_App) 
+
+        #* Create the app process instance
+        # This is the instance of the base app inherited from the TDEApp class. Right now
+        # it just holds all the app metadata. Store this in the process manager.
         app_process = TDE_App(id=app_id)
         self._add_process_to_dict(app_process, app_id)
-        launch_mode = app_process.get_launch_mode()
 
+        # The rest is pretty self explanatory.
+        launch_mode = app_process.get_launch_mode()
         if launch_mode == LaunchMode.WINDOW:
 
             main_content = app_process.get_main_content()
@@ -109,26 +118,30 @@ class ProcessManager(BaseService):
                 )
                 #! Create error popup for user here
                 return
-            default_window_settings = app_process.default_window_settings
-            custom_window_settings = app_process.get_custom_window_settings()
-            window_settings: DefaultWindowSettings = {
-                **default_window_settings, **custom_window_settings
-            } 
-
             try:
                 content_instance = main_content()
             except Exception as e:
                 log.error(f"Failed to create main content instance for {app_process.APP_NAME}: {e}")
                 #! Create error popup for user here
                 return
+            
+            # Store any content instances in the dictionary for keeping track of them.
+            # Right now this whole system is only designed for one content instance, but
+            # in the future we might want to support multiple content instances per app.
+            self._content_instance_dict[app_id] = [content_instance]
+            
+            # Merge the default window settings with any custom settings
+            # Custom settings will override the default settings.
+            default_window_settings = app_process.default_window_settings
+            custom_window_settings = app_process.get_custom_window_settings()
+            window_settings: DefaultWindowSettings = {
+                **default_window_settings, **custom_window_settings
+            } 
 
-            self.services_manager.window_service.mount_window(
-                Window(
-                    content_instance,
-                    id=app_id, 
-                    name=app_process.APP_NAME,
-                    **window_settings
-                ), 
+            self.services_manager.window_service.create_new_window(
+                content_instance=content_instance,
+                app_id=app_id,
+                window_dict=window_settings,
                 callback_id="main_desktop"
             )
 

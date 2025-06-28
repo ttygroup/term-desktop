@@ -89,10 +89,13 @@ class CustomCanvas(Canvas):
 
 class Desktop(Container):
 
+    def __init__(self, id: str) -> None:
+        super().__init__(id=id)
+
     def compose(self) -> ComposeResult:
 
         # yield Coloromatic(pattern="brick2")
-        with CustomCanvas():
+        with CustomCanvas(): 
             yield FigletWidget(
                 "T",
                 font="dos_rebel",
