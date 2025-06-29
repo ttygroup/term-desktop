@@ -23,7 +23,8 @@ class AppLoader(BaseService):
             services_manager: ServicesManager, 
         ) -> None:
         """
-        Initialize the app loader.
+        Initialize the app loader. Adds the default built-in apps directory
+        to the list of directories to search for app files.
         """
         super().__init__(services_manager)
         self.directories: list[Path] = []        
@@ -80,6 +81,7 @@ class AppLoader(BaseService):
         log("Starting AppLoader service")
 
         try:
+            self._failed_apps.clear()
             self._registered_apps = await self.discover_apps(self.directories)
         except Exception as e:
             log.error(f"Failed to discover apps: {str(e)}")
@@ -116,55 +118,80 @@ class AppLoader(BaseService):
         - Function is pure: [✓]   
         """
 
-        #! MUST BE RE-WORKED TO ACCOMODATE PACKAGES INSTEAD OF ONLY .py FILES !!
-
         log.debug("Discovering apps")
         loaded_apps: dict[str, Type[TDEApp]] = {}
+
+        # These allowed names could be extended in the future. I thought it would be
+        # good to code it in a way that allows for easy extension.
+        allowed_main_names = {"app.py", "main.py"}
+
+        # This is a dictionary where the key is the app name, and the value is a tuple
+        # containing the type of the path ('file' or 'dir') and the path itself.
+        apps_to_load: dict[str, tuple[str, Path]] = {}
 
         for directory in directories:
             if not os.path.exists(directory):
                 raise FileNotFoundError(f"Apps directory not found: {directory}")
-
+        
             for path in Path(directory).iterdir():
-                if path.suffix == ".py" and not path.name.startswith("__"):
-                    log.debug(f"Found app file: {path.name}")
-
-                    try:
-                        AppClass = self.load_app_class(path)
-                    except ImportError as e:
-                        log.error(f"Failed to load app {path.name}: {str(e)}")
-                        self._failed_apps[path.name] = e
-                        continue
-                    except Exception as e:
-                        log.error(f"Unexpected error loading app {path.name}: {str(e)}")
-                        self._failed_apps[path.name] = e
-                        continue
-
-                    log(f"Loaded app class: {AppClass.__name__} from {path.name}")
-
-                    assert AppClass.APP_ID is not None  # validated by the TDEApp ABC
-                    try:
-                        loaded_apps[AppClass.APP_ID] = AppClass
-                    except KeyError:
-                        log.error(
-                            f"App was loaded successfully, but app with ID "
-                            f"{AppClass.APP_ID} is already registered!"
-                        )
-                        self._failed_apps[path.name] = KeyError(
-                            f"App with ID {AppClass.APP_ID} already registered."
-                        )
+                app_tuple: tuple[str, Path] | None = None
+                if not path.name.startswith("__"):  # excludes __init__ and __pycache__
+                    
+                    if path.is_file() and path.suffix == ".py":
+                        app_tuple = ("file", path)
+                    elif path.is_dir():
+                        for candidate in allowed_main_names:
+                            if (path / candidate).exists():
+                                app_tuple = ("dir", path)
+                                break
+                        if app_tuple is None:
+                            log.warning(f"Directory {path} does not contain a valid app file. Skipping.")
+                            continue
                     else:
-                        log.debug(f"Loaded app: {AppClass.APP_NAME}")
+                        continue
+
+                    if path.stem in apps_to_load:
+                        log.error(f"App with name '{path.stem}' already exists. Skipping: {path}")
+                        self._failed_apps[path.name] = ValueError("Duplicate app name")
+                        continue
+                    apps_to_load[path.stem] = app_tuple
+
+        # Code at this point will be finished scanning *all* directories.
+        # If there were any apps with the same name, the conflicting app was
+        # blocked from being added to the apps_to_load dict.
+        for _unique_key_, (file_or_dir, path) in apps_to_load.items():
+
+            try:
+                AppClass = self.load_app_class(path, file_or_dir)
+            except ImportError as e:
+                log.error(f"Failed to load app {path.name}: {str(e)}")
+                self._failed_apps[path.name] = e
+                continue
+            except Exception as e:
+                log.error(f"Unexpected error loading app {path.name}: {str(e)}")
+                self._failed_apps[path.name] = e
+                continue
+
+            assert AppClass.APP_ID is not None  # validated by the TDEApp ABC
+            try:
+                loaded_apps[AppClass.APP_ID] = AppClass
+            except KeyError as e:
+                log.error(
+                    f"App was loaded successfully, but app with ID "
+                    f"{AppClass.APP_ID} is already registered!"
+                )
+                self._failed_apps[path.name] = e
 
         return loaded_apps
 
-    def load_app_class(self, path: Path) -> Type[TDEApp]:
+    def load_app_class(self, path: Path, file_or_dir: str) -> Type[TDEApp]:
         """
         Load an app class from a given path.
         Called by AppLoader.discover_apps (above)
 
         Args:
             path (Path): Path to the app file.
+            file_or_dir (str): Type of the path, either 'file' or 'dir'.
         Returns:
             Type[TDEApp]: The loaded app class.
         Raises:
@@ -172,22 +199,29 @@ class AppLoader(BaseService):
 
         - Function is pure: [✓]   
         """
+        if file_or_dir == "file":
+            location = path
+            module_name = f"dynamic_mod_{path.stem}"
+        else:
+            assert file_or_dir == "dir"
+            location = path / "app.py"
+            module_name = f"dynamic_pkg_{path.name}"            
 
         ### ~ Stage 1: Load the module spec ~ ###
         try:
-            spec = importlib.util.spec_from_file_location(path.stem, path)
+            spec = importlib.util.spec_from_file_location(module_name, location)
         except Exception as e:
-            raise ImportError(f"Failed to load spec for app {path.stem}: {str(e)}") from e
+            raise ImportError(f"Failed to load spec for app {module_name}: {str(e)}") from e
         else:
             if spec is None or spec.loader is None:
-                raise ImportError(f"Failed to load spec for app {path.stem}")
+                raise ImportError(f"Failed to load spec for app {module_name}")
 
         ### ~ Stage 2: Load module using the spec ~ ###
         try:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
         except Exception as e:
-            raise ImportError(f"Failed to load module for app {path.stem}: {str(e)}") from e
+            raise ImportError(f"Failed to load module for app {module_name}: {str(e)}") from e
 
         ### ~ Stage 3: Retrieve the app class from module ~ ###
         # new plan: get dict of all classes in the module, then check for TDEApp subclass
@@ -198,7 +232,7 @@ class AppLoader(BaseService):
             )
         except StopIteration:
             raise ImportError(
-                f"{path.stem} did not return a valid TDEApp class."
+                f"{module_name} did not return a valid TDEApp class."
                 "Ensure that your main app class inherits from TDEApp."
             )
         return AppClass

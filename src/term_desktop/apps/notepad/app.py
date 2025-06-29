@@ -1,4 +1,7 @@
-"notepad.py"
+"""notepad.py
+It's not necessary for this to have the same name
+as the package. Just does here.
+"""
 
 # python imports
 from __future__ import annotations
