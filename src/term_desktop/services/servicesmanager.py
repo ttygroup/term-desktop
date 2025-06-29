@@ -15,6 +15,7 @@ from term_desktop.services.windowservice import WindowService
 
 class ServicesManager(DOMNode):
     """The uber manager to manage other managers."""
+
     # NOTE: This is a Textual DOMNode because it will allow it to do Textual things
     # like run workers or send messages to the main app.
     # DOMNodes still cannot be mounted though, which is why this gets wrapped in the
@@ -34,11 +35,10 @@ class ServicesManager(DOMNode):
         self.window_service = WindowService(self)
         self.services_dict["window_service"] = WindowService
 
-
     async def start_all_services(self) -> None:
         """Start all services."""
 
-        #? This will eventually be built out to use workers and threads, with
+        # ? This will eventually be built out to use workers and threads, with
         # a robust service management system and whatnot.
         # For now we just run them.
         self.log("ServicesManager starting all services...")
@@ -58,7 +58,7 @@ class ServicesManager(DOMNode):
         except RuntimeError:
             raise
         except Exception as e:
-            raise RuntimeError(f"AppLoader startup failed with an unexpected error: {str(e)}") from e        
+            raise RuntimeError(f"AppLoader startup failed with an unexpected error: {str(e)}") from e
         else:
             if not app_loader_success:
                 raise RuntimeError("AppLoader startup returned False after running.")
@@ -68,7 +68,7 @@ class ServicesManager(DOMNode):
         except RuntimeError:
             raise
         except Exception as e:
-            raise RuntimeError(f"WindowService startup failed with an unexpected error: {str(e)}") from e        
+            raise RuntimeError(f"WindowService startup failed with an unexpected error: {str(e)}") from e
         else:
             if not window_service_success:
                 raise RuntimeError("WindowService startup returned False after running.")

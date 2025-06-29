@@ -2,7 +2,7 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING #, cast
+from typing import TYPE_CHECKING  # , cast
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -79,17 +79,14 @@ class MainScreen(Screen[None]):
 
     def on_mount(self) -> None:
         services = self.app.query_one(ServicesWidget).services
-        services.window_service.register_mounting_callback(
-            self.mounting_callback, callback_id="main_desktop"
-        )
-        # self.call_after_refresh(self.finish_mounting)
+        services.window_service.register_mounting_callback(self.mounting_callback, callback_id="main_desktop")
         self.set_timer(0.3, self.finish_mounting)
 
     def finish_mounting(self) -> None:
         self.styles.animate("opacity", 1.0, duration=0.5)
 
-    def mounting_callback(self, window: Window) -> None:
-        self.query_one(Desktop).mount(window)
+    async def mounting_callback(self, window: Window) -> None:
+        await self.query_one(Desktop).mount(window)
 
     ###############
     # ~ Actions ~ #
@@ -132,12 +129,12 @@ class MainScreen(Screen[None]):
         elsewhere on the screen while it is open"""
 
         start_menu = self.query_one(StartMenu)
-        if not start_menu.state:   # if its currently closed, do nothing.
+        if not start_menu.state:  # if its currently closed, do nothing.
             return
         if event.widget:
             if (
-                event.widget is not self.query_one(StartMenu)        # not the start menu
-                and event.widget not in start_menu.query().results() # not inside the start menu
+                event.widget is not self.query_one(StartMenu)  # not the start menu
+                and event.widget not in start_menu.query().results()  # not inside the start menu
                 and event.widget is not self.query_one(TaskBar).query_one("#start_button")
             ):
                 await self.run_action("toggle_startmenu")
@@ -145,7 +142,7 @@ class MainScreen(Screen[None]):
     @on(Window.Closed)
     def termd_app_closed(self, event: Window.Closed) -> None:
         """Handle the closing of a window)."""
-        #! This should just yeet the event over to the process manager.                
+        #! This should just yeet the event over to the process manager.
 
     @on(TaskBar.DockToggled)
     def taskbar_dock_toggled(self, event: TaskBar.DockToggled) -> None:

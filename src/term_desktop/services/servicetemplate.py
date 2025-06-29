@@ -3,6 +3,7 @@
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
 
@@ -18,10 +19,10 @@ from term_desktop.services.servicebase import BaseService
 class ServiceTemplate(BaseService):
 
     def __init__(
-        self, 
-        services_manager: ServicesManager, 
+        self,
+        services_manager: ServicesManager,
     ) -> None:
-        """        
+        """
         Initialize the [INSERT SERVICE NAME HERE]
         """
         super().__init__(services_manager)

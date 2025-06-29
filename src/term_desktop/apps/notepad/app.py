@@ -5,6 +5,7 @@ as the package. Just does here.
 
 # python imports
 from __future__ import annotations
+
 # from typing import Any #, Type
 
 # Textual imports
@@ -19,7 +20,12 @@ from textual.geometry import Offset
 
 
 # Local imports
-from term_desktop.app_sdk.appbase import (TDEApp, LaunchMode, CustomWindowSettings,)
+from term_desktop.app_sdk.appbase import (
+    TDEApp,
+    LaunchMode,
+    CustomWindowSettings,
+    CustomWindowMounts,
+)
 
 
 class CommandBar(Horizontal):
@@ -81,8 +87,8 @@ class NotepadMenu(ModalScreen[None]):
     CSS = """
     NotepadMenu {
         background: $background 0%;
-        align: left top;         /* This will set the starting coordinates to (0, 0) Which we need... */
-        & > #menu_container {                       /* ...because of the absolute offsets */
+        align: left top;         /* This will set the starting coordinates to (0, 0) */
+        & > #menu_container {        /* Which we need because of the absolute offsets */
             background: $surface;
             width: 14; height: 6;
             border-left: wide $panel;
@@ -177,7 +183,7 @@ class Notepad(TDEApp):
     ICON = "📝"
     DESCRIPTION = "TDE Notepad, simple text editor for TDE."
 
-    def get_launch_mode(self) -> LaunchMode:
+    def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n
 
         Must return one of the `LaunchMode` enum values.
@@ -187,15 +193,14 @@ class Notepad(TDEApp):
     def get_main_content(self) -> type[Widget] | None:
         """Returns the class definiton for the main content widget for the app. \n
         Must return a definition of a Widget subclass, not an instance of it.
-        
+
         If the TDEapp is a normal app (runs in a window or full screen), this must return
         the main content Widget for your app. If the TDEapp is a daemon, this method must
         return None.
         """
         return NotepadWidget
 
-
-    def get_custom_window_settings(self) -> CustomWindowSettings:
+    def custom_window_settings(self) -> CustomWindowSettings:
         """Returns the settings for the window to be created. \n
 
         This is not part of the contract and not necessary to implement.
@@ -204,4 +209,10 @@ class Notepad(TDEApp):
         return {
             # This returns an empty dictionary when not overridden.
             # see CustomWindowSettings for more options
+        }
+
+    def custom_window_mounts(self) -> CustomWindowMounts:
+
+        return {
+            "below_topbar": CommandBar,
         }

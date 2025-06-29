@@ -6,6 +6,7 @@ The calculator app from the examples folder in the Textual github repository.
 
 # Python imports
 from __future__ import annotations
+
 # from typing import Any, Type
 from decimal import Decimal
 
@@ -21,7 +22,11 @@ from textual.css.query import NoMatches
 from textual.reactive import var
 from textual.widgets import Button, Digits
 
-from term_desktop.app_sdk.appbase import (TDEApp, LaunchMode, CustomWindowSettings,)
+from term_desktop.app_sdk.appbase import (
+    TDEApp,
+    LaunchMode,
+    CustomWindowSettings,
+)
 
 
 class CalculatorApp(Widget):
@@ -213,7 +218,7 @@ class Calculator(TDEApp):
     ICON = "🧮"
     DESCRIPTION = "Calculate things, mostly numbers."
 
-    def get_launch_mode(self) -> LaunchMode:
+    def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n
 
         Must return one of the `LaunchMode` enum values.
@@ -223,15 +228,14 @@ class Calculator(TDEApp):
     def get_main_content(self) -> type[Widget] | None:
         """Returns the class definiton for the main content widget for the app. \n
         Must return a definition of a Widget subclass, not an instance of it.
-        
+
         If the TDEapp is a normal app (runs in a window or full screen), this must return
         the main content Widget for your app. If the TDEapp is a daemon, this method must
         return None.
         """
         return CalculatorApp
 
-
-    def get_custom_window_settings(self) -> CustomWindowSettings:
+    def custom_window_settings(self) -> CustomWindowSettings:
         """Returns the settings for the window to be created. \n
 
         This is not part of the contract and not necessary to implement.

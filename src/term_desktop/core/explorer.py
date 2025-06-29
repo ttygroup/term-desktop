@@ -47,14 +47,13 @@ class ExplorerPathBar(SlideContainer):
         yield path_input
 
     def update_path(self, path: Path) -> None:
-        jump_clicker: type[MainScreen] # .node_highlighted()  # noqa: F842 # type: ignore
+        jump_clicker: type[MainScreen]  # .node_highlighted()  # noqa: F842 # type: ignore
 
         path_input = self.query_one(Input)
         path_input.value = str(path)
 
-
     def shift_ui_for_taskbar(self, dock: str) -> None:
-        jump_clicker: type[MainScreen] # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
+        jump_clicker: type[MainScreen]  # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
 
         if dock == "top":
             self.styles.height = 1
@@ -121,7 +120,7 @@ class InfoItem(Horizontal):
         yield Static(id="value")
 
     def update(self, value: str) -> None:
-        jump_clicker: type[ExplorerInfo] # .update_info()  # noqa: F842 # type: ignore        
+        jump_clicker: type[ExplorerInfo]  # .update_info()  # noqa: F842 # type: ignore
 
         value_widget = self.query_one("#value", Static)
         value_widget.update(value)
@@ -146,9 +145,8 @@ class ExplorerInfo(Container):
 
     @work(group="update_info", exclusive=True, exit_on_error=False)
     async def update_info(self, info_dict: dict[str, str]) -> None:
-        jump_clicker: type[FileExplorer]  # noqa: F842 # type: ignore  
-        #? called by the methods: [node_selected, node_highlighted, action_scan_directory]      
-
+        jump_clicker: type[FileExplorer]  # noqa: F842 # type: ignore
+        # ? called by the methods: [node_selected, node_highlighted, action_scan_directory]
 
         if info_dict["type"] == "Directory":
             self.query_one("#file_count", InfoItem).display = True
@@ -239,7 +237,7 @@ class FileExplorer(SlideContainer):
             self.query_one(CustomDirectoryTree).visible = False
 
     def shift_ui_for_taskbar(self, dock: str) -> None:
-        jump_clicker: type[MainScreen] # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
+        jump_clicker: type[MainScreen]  # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
 
         vertical = self.query_one(Vertical)
         if dock == "top":

@@ -78,7 +78,7 @@ class Desktop(Container):
     def compose(self) -> ComposeResult:
 
         # yield Coloromatic(pattern="brick2")
-        with CustomCanvas(): 
+        with CustomCanvas():
             yield FigletWidget(
                 "T",
                 font="dos_rebel",

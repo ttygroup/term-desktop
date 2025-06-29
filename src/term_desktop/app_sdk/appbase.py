@@ -15,14 +15,12 @@ from textual_window.window import STARTING_HORIZONTAL, STARTING_VERTICAL, MODE
 
 
 class LaunchMode(Enum):
-    WINDOW = "window"  # Launch in a new window
-    FULLSCREEN = "fullscreen"  # Launch in fullscreen mode
-    DAEMON = "daemon"  # Launch as a background daemon process
+    WINDOW = "window"  #            Launch in a new window
+    FULLSCREEN = "fullscreen"  #    Launch in fullscreen mode
+    DAEMON = "daemon"  #            Launch as a background daemon process
 
 
 class CustomWindowSettings(TypedDict, total=False):
-    # width: int    # some kind of way to set styles needs to be
-    # height: int   # added to the textual-window library
     mode: MODE
     icon: str | None
     classes: str | None
@@ -36,9 +34,8 @@ class CustomWindowSettings(TypedDict, total=False):
     animated: bool
     show_title: bool
 
+
 class DefaultWindowSettings(TypedDict, total=True):
-    # width: int
-    # height: int
     name: str | None  #  This is the app name, not the window name.
     mode: MODE
     icon: str | None
@@ -54,23 +51,29 @@ class DefaultWindowSettings(TypedDict, total=True):
     show_title: bool
 
 
+class CustomWindowMounts(TypedDict, total=False):
+    """A dictionary of custom mounts to be added to the window.
+    You can attach one widget to each of the following keys."""
 
-#! I am still not sure it is gonna work for this to be an ABC.
-# * might need to use Textual workers or send messages.
-# Can possibly use self.tde tho? Will have to test.
+    above_topbar: type[Widget]  #      mounted above the top bar.
+    below_topbar: type[Widget]  #      mounted below the top bar
+    left_pane: type[Widget]  #         mounted to the left of the content area
+    right_pane: type[Widget]  #        mounted to the right of the content area
+    above_bottombar: type[Widget]  #   mounted above the bottom bar
+    below_bottombar: type[Widget]  #   mounted below the bottom bar
+
+
 class TDEApp(ABC):
 
     ################
     # ~ CONTRACT ~ #
     ################
 
-    # Everything in this section must be overridden in the child class.
-
     APP_NAME: str | None = None
     APP_ID: str | None = None
 
     @abstractmethod
-    def get_launch_mode(self) -> LaunchMode:
+    def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n
 
         Must return one of the `LaunchMode` enum values.
@@ -81,7 +84,7 @@ class TDEApp(ABC):
     def get_main_content(self) -> type[Widget] | None:
         """Returns the class definiton for the main content widget for the app. \n
         Must return a definition of a Widget subclass, not an instance of it.
-        
+
         If the TDEapp is a normal app (runs in a window or full screen), this must return
         the main content Widget for your app. If the TDEapp is a daemon, this method must
         return None.
@@ -95,20 +98,34 @@ class TDEApp(ABC):
     ICON: str = "❓"  #         should possibly just be '?'
     DESCRIPTION: str = ""
 
-    def get_custom_window_settings(self) -> CustomWindowSettings:
+    def custom_window_settings(self) -> CustomWindowSettings:
         """Returns the settings for the window to be created. \n
 
         This method can be optionally overridden to provide custom window settings.
         """
         return {
             # This returns an empty dictionary when not overridden.
-
             # "start_open": True,
             # "mode": "permanent",  # default is temporary
             # "icon": "custom icon",
             # "allow_resize": False,
             # etc etc
             # See CustomWindowSettings
+        }
+
+    def custom_window_mounts(self) -> CustomWindowMounts:
+        """Returns a dictionary of custom mounts to be added to the window. \n
+
+        This method can be optionally overridden to provide custom mounts for the window.
+        """
+        return {
+            # This returns an empty dictionary when not overridden.
+            # "above_topbar": None,
+            # "below_topbar": None,
+            # "left_pane": None,
+            # "right_pane": None,
+            # "above_bottombar": None,
+            # "below_bottombar": None,
         }
 
     #####################
@@ -134,7 +151,7 @@ class TDEApp(ABC):
         """The ID is set by the process manager when it initializes the app process.
         It will append a number to keep track of multiple instances of the same app.
 
-        Note that this is not the same as window number - A single app process instance 
+        Note that this is not the same as window number - A single app process instance
         can still hypothetically have multiple windows managed by it."""
         self.id = id
 
@@ -158,7 +175,6 @@ class TDEApp(ABC):
                 if attr is None:
                     raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
 
-
     @property
     def default_window_settings(cls) -> DefaultWindowSettings:
         """Returns the settings for the window to be created. \n
@@ -167,13 +183,11 @@ class TDEApp(ABC):
         override the `get_custom_window_settings` method.
         """
         return {
-            # "width": 45,      # ! not sure width and height should be here
-            # "height": 20,
             "name": cls.APP_NAME,
             "mode": "temporary",
             "icon": cls.ICON,
             "classes": None,
-            "starting_horizontal":  "center",
+            "starting_horizontal": "center",
             "starting_vertical": "middle",
             "start_open": True,
             "start_snapped": True,
@@ -181,5 +195,5 @@ class TDEApp(ABC):
             "allow_maximize": True,
             "menu_options": None,
             "animated": True,
-            "show_title": True
+            "show_title": True,
         }

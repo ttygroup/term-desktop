@@ -3,6 +3,7 @@
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING  # , cast  # , Type #, Any
+
 if TYPE_CHECKING:
     from textual.app import ComposeResult
 
@@ -39,7 +40,7 @@ class TermDesktop(App[None]):
     def compose(self) -> ComposeResult:
         self.services = ServicesWidget()
         yield self.services
-        
+
     async def on_mount(self) -> None:
 
         self.services.create_services_manager()
@@ -53,9 +54,11 @@ class TermDesktop(App[None]):
         self.log.debug(self.tree)
         self.log.debug(Rule("End of Debug Readout"))
 
+
 ####################
 # ~ Run function ~ #
 ####################
+
 
 def run():
     TermDesktop().run()

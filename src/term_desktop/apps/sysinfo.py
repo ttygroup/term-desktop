@@ -4,6 +4,7 @@ sysinfo.py
 
 # Python imports
 from __future__ import annotations
+
 # from typing import Any, Type
 import os
 import sys
@@ -12,11 +13,16 @@ import platform
 # Textual imports
 # from textual import events, on
 from textual.widgets import Static
+
 # from textual.message import Message
 # from textual.binding import Binding
 from textual.widget import Widget
 
-from term_desktop.app_sdk.appbase import (TDEApp, LaunchMode, CustomWindowSettings,)
+from term_desktop.app_sdk.appbase import (
+    TDEApp,
+    LaunchMode,
+    CustomWindowSettings,
+)
 
 
 class SysInfoWidget(Widget):
@@ -37,7 +43,7 @@ class SysInfoWidget(Widget):
         yield Static(
             "\n".join(f"{key}: {value}" for key, value in self.static_system_info.items()),
             id="content",
-        ) 
+        )
 
     def get_static_system_info(self) -> dict[str, str]:
         uname = platform.uname()
@@ -93,7 +99,7 @@ class SysInfoWidget(Widget):
             return os.environ.get("PROCESSOR_IDENTIFIER", "Unknown")
 
         # Fallback
-        return platform.processor() or "Unknown" 
+        return platform.processor() or "Unknown"
 
 
 class SysInfo(TDEApp):
@@ -103,7 +109,7 @@ class SysInfo(TDEApp):
     ICON = "🛈"
     DESCRIPTION = "View static system info such as OS, CPU, UID/GID, etc."
 
-    def get_launch_mode(self) -> LaunchMode:
+    def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n
 
         Must return one of the `LaunchMode` enum values.
@@ -113,15 +119,14 @@ class SysInfo(TDEApp):
     def get_main_content(self) -> type[Widget] | None:
         """Returns the class definiton for the main content widget for the app. \n
         Must return a definition of a Widget subclass, not an instance of it.
-        
+
         If the TDEapp is a normal app (runs in a window or full screen), this must return
         the main content Widget for your app. If the TDEapp is a daemon, this method must
         return None.
         """
         return SysInfoWidget
 
-
-    def get_custom_window_settings(self) -> CustomWindowSettings:
+    def custom_window_settings(self) -> CustomWindowSettings:
         """Returns the settings for the window to be created. \n
 
         This is not part of the contract and not necessary to implement.

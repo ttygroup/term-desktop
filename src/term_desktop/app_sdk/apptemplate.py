@@ -14,11 +14,17 @@ from __future__ import annotations
 # Textual imports
 from textual import events, on
 from textual.widgets import Static
+
 # from textual.message import Message
 # from textual.binding import Binding
 from textual.widget import Widget
 
-from term_desktop.app_sdk.appbase import (TDEApp, LaunchMode, CustomWindowSettings,)
+from term_desktop.app_sdk.appbase import (
+    TDEApp,
+    LaunchMode,
+    CustomWindowSettings,
+    CustomWindowMounts,
+)
 
 
 class TemplateContent(Widget):
@@ -42,18 +48,17 @@ class TemplateContent(Widget):
 
     # The mount and focus methods can be split into two methods if you prefer:
     # def on_focus(self) -> None:
-    #     self.query_one("#my_static", Static).focus()    
+    #     self.query_one("#my_static", Static).focus()
 
 
 class Template(TDEApp):
-
 
     APP_NAME: str | None = None
     APP_ID: str | None = None
     ICON: str = "❓"  #         should possibly just be '?'
     DESCRIPTION: str = "Your Description Here"
 
-    def get_launch_mode(self) -> LaunchMode:
+    def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n
 
         Must return one of the `LaunchMode` enum values.
@@ -63,7 +68,7 @@ class Template(TDEApp):
     def get_main_content(self) -> type[Widget] | None:
         """Returns the class definiton for the main content widget for the app. \n
         Must return a definition of a Widget subclass, not an instance of it.
-        
+
         If the TDEapp is a normal app (runs in a window or full screen), this must return
         the main content Widget for your app. If the TDEapp is a daemon, this method must
         return None.
@@ -72,8 +77,7 @@ class Template(TDEApp):
         # TemplateContent class. Do not instantiate it.
         return TemplateContent
 
-
-    def get_custom_window_settings(self) -> CustomWindowSettings:
+    def custom_window_settings(self) -> CustomWindowSettings:
         """Returns the settings for the window to be created. \n
 
         This is not part of the contract and not necessary to implement.
@@ -81,9 +85,20 @@ class Template(TDEApp):
         """
         return {
             # This returns an empty dictionary when not overridden.
-
-            "start_open": False,        # default is True
-            "allow_resize": False,      # default is True
-            "allow_maximize": False,    # default is True
+            # "start_open": False,  #       default is True
+            # "allow_resize": False,  #     default is True
+            # "allow_maximize": False,  #   default is True
             # see CustomWindowSettings for more options
+        }
+
+    def custom_window_mounts(self) -> CustomWindowMounts:
+
+        return {
+            # This returns an empty dictionary when not overridden.
+            # "above_topbar": None,
+            # "below_topbar": None,
+            # "left_pane": None,
+            # "right_pane": None,
+            # "above_bottombar": None,
+            # "below_bottombar": None,
         }

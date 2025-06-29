@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Type
 import os
 import importlib.util
 from pathlib import Path
+
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
 
@@ -19,15 +20,15 @@ from term_desktop.services.servicebase import BaseService
 class AppLoader(BaseService):
 
     def __init__(
-            self, 
-            services_manager: ServicesManager, 
-        ) -> None:
+        self,
+        services_manager: ServicesManager,
+    ) -> None:
         """
         Initialize the app loader. Adds the default built-in apps directory
         to the list of directories to search for app files.
         """
         super().__init__(services_manager)
-        self.directories: list[Path] = []        
+        self.directories: list[Path] = []
         self._registered_apps: dict[str, Type[TDEApp]] = {}
         self._failed_apps: dict[str, Exception] = {}
 
@@ -38,7 +39,7 @@ class AppLoader(BaseService):
     def registered_apps(self) -> dict[str, Type[TDEApp]]:
         """
         Get the currently registered apps.
-        
+
         Returns:
             dict[str, Type[TDEApp]]: Dictionary mapping app IDs to their app classes.
         """
@@ -48,7 +49,7 @@ class AppLoader(BaseService):
     def failed_apps(self) -> dict[str, Exception]:
         """
         Get the apps that failed to load.
-        
+
         Returns:
             dict[str, Exception]: Dictionary mapping app IDs to the exceptions raised during loading.
         """
@@ -61,7 +62,7 @@ class AppLoader(BaseService):
         Args:
             directory (Path): The directory to add.
 
-        - Function is pure: [no]           
+        - Function is pure: [no]
         """
         assert isinstance(directory, Path), "directory must be a Path object"
         if not directory.exists():
@@ -69,14 +70,13 @@ class AppLoader(BaseService):
         self.directories.append(directory)
         log.debug(f"Added apps directory: {directory}")
 
-
     async def start(self) -> bool:
         """Start the AppLoader service.
         If it returns True, the self.registered_apps dictionary will be available.
 
         Raises:
             RuntimeError: If the app discovery fails or no apps are found.
-        
+
         - Function is pure: [no]"""
         log("Starting AppLoader service")
 
@@ -96,12 +96,10 @@ class AppLoader(BaseService):
                     log.debug(f"ID: {app_id} - Display Name: {app_class.APP_NAME}")
             return True
 
-
     async def stop(self) -> bool:
         log("Stopping AppLoader service")
         self.registered_apps.clear()
         return True
-    
 
     async def discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEApp]]:
         """
@@ -115,7 +113,7 @@ class AppLoader(BaseService):
         Raises:
             FileNotFoundError: If any of the directories do not exist.
 
-        - Function is pure: [✓]   
+        - Function is pure: [✓]
         """
 
         log.debug("Discovering apps")
@@ -132,11 +130,11 @@ class AppLoader(BaseService):
         for directory in directories:
             if not os.path.exists(directory):
                 raise FileNotFoundError(f"Apps directory not found: {directory}")
-        
+
             for path in Path(directory).iterdir():
                 app_tuple: tuple[str, Path] | None = None
                 if not path.name.startswith("__"):  # excludes __init__ and __pycache__
-                    
+
                     if path.is_file() and path.suffix == ".py":
                         app_tuple = ("file", path)
                     elif path.is_dir():
@@ -197,7 +195,7 @@ class AppLoader(BaseService):
         Raises:
             ImportError: If the app class cannot be loaded or does not implement the required interface.
 
-        - Function is pure: [✓]   
+        - Function is pure: [✓]
         """
         if file_or_dir == "file":
             location = path
@@ -205,7 +203,7 @@ class AppLoader(BaseService):
         else:
             assert file_or_dir == "dir"
             location = path / "app.py"
-            module_name = f"dynamic_pkg_{path.name}"            
+            module_name = f"dynamic_pkg_{path.name}"
 
         ### ~ Stage 1: Load the module spec ~ ###
         try:
@@ -227,7 +225,8 @@ class AppLoader(BaseService):
         # new plan: get dict of all classes in the module, then check for TDEApp subclass
         try:
             AppClass = next(
-                cls for _name_, cls in module.__dict__.items()
+                cls
+                for _name_, cls in module.__dict__.items()
                 if isinstance(cls, type) and issubclass(cls, TDEApp) and cls is not TDEApp
             )
         except StopIteration:

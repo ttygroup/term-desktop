@@ -3,8 +3,6 @@ from textual.widgets import Static
 from textual.screen import Screen
 
 
-
-
 class NoSelectStatic(Static):
     """This class is used in window.py and windowbar.py to create buttons."""
 

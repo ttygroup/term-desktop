@@ -1,6 +1,6 @@
-
 from textual.widget import Widget
 from term_desktop.services.servicesmanager import ServicesManager
+
 
 class ServicesWidget(Widget):
     """A widget that houses the ServicesManager for mounting into the main app as
@@ -14,7 +14,7 @@ class ServicesWidget(Widget):
         """Initializes the ServicesManager instance inside this widget."""
 
         self._services = ServicesManager()
-        
+
     async def start_services(self) -> None:
         """Starts all services managed by the ServicesManager."""
 

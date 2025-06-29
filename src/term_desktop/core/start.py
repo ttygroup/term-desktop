@@ -16,6 +16,7 @@ from textual.app import ComposeResult
 from textual.geometry import Offset
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
+
 # from textual.message import Message
 
 # Textual library imports
@@ -23,6 +24,7 @@ from textual_slidecontainer import SlideContainer
 
 # Local imports
 from term_desktop.services import ServicesWidget
+
 
 class StartMenu(SlideContainer):
 
