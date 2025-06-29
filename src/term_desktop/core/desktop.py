@@ -1,33 +1,18 @@
-"desktop.py -"
+"desktop.py"
 
 # python standard library imports
 from __future__ import annotations
 
-# from typing import TYPE_CHECKING
-
-# if TYPE_CHECKING:
-# from term_desktop.main import TermDesktop
-
 # Textual imports
 from textual import on, events  # , work
 from textual.app import ComposeResult
-
-# from textual.geometry import Size, Region
-# from textual.widgets import OptionList
-# from textual.widget import Widget
 from textual.containers import Container
-
-# from textual.widgets.option_list import Option
-# from textual.message import Message
 
 # Textual library imports
 from textual_pyfiglet import FigletWidget
-
-# from textual_coloromatic import Coloromatic
 from textual_hires_canvas import Canvas  # , HiResMode
 
-# Local imports
-# from term_desktop.common import RegisteredApps
+# from textual_coloromatic import Coloromatic
 
 
 __all__ = [
@@ -70,13 +55,11 @@ class CustomCanvas(Canvas):
     def on_mouse_move(self, event: events.MouseMove) -> None:
 
         if self.app.mouse_captured == self:
-            self.log(f"Mouse moved to: {event.offset}")
             self.clear_canvas()
 
             # Get the absolute position of the mouse right now (event.screen_offset),
             # minus where it was when the mouse was pressed down (position_on_down).
             total_delta = event.offset - self.position_on_down
-            # new_size = self.size_on_down + total_delta
 
             self.draw_rectangle_box(
                 x0=self.position_on_down.x,
