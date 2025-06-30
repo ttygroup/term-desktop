@@ -108,12 +108,12 @@ ExplorerPathBar {
 AppChooser { 
     align: center middle; 
     & > Vertical { 
-        width: 40%; min-width: 35;
+        width: 50%; min-width: 35;
         height: 60%; min-height: 15;
         align: right middle;
         background: $surface;
-        border: wide $panel;
-        padding: 1 0; 
+        border: tall $panel;
+        padding: 0 2; 
         & > Right {
             & > Button { margin: 0 1; }
         }

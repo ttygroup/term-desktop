@@ -142,11 +142,6 @@ class MainScreen(Screen[None]):
             ):
                 await self.run_action("toggle_startmenu")
 
-    @on(Window.Closed)
-    def termd_app_closed(self, event: Window.Closed) -> None:
-        """Handle the closing of a window)."""
-        #! This should just yeet the event over to the process manager.
-
     @on(TaskBar.DockToggled)
     def taskbar_dock_toggled(self, event: TaskBar.DockToggled) -> None:
 
