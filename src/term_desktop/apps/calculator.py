@@ -73,12 +73,12 @@ class Calculator(TDEApp):
     def window_styles(self) -> WindowStylesDict:
 
         return {
-            "width": 45,  #
-            "height": 25,  #
+            "width": 33,  #
+            "height": 30,  #
             # "max_width": None,  #  default is 'size of the parent container'
             # "max_height": None,  # default is 'size of the parent container'
-            "min_width": 30,  #
-            "min_height": 20,  #
+            "min_width": 33,  #
+            "min_height": 30,  #
         }
 
 

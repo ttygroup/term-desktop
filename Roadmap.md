@@ -2,9 +2,8 @@
 
 ## All Services Stuff
 
-[ ] Build Meta class mixer for ABC and DOMNode to use for Base Services ABC
-[ ] Make service `start` methods run in Textual thread workers
 [ ] Build a Services Manager screen to view the status of all services
+[X] Build a run_worker bridge function in BaseService so that services can run workers
 
 ## App SDK
 
@@ -13,6 +12,14 @@
 [X] Build a way for 'apps' to be entire packages instead of only .py files
 [X] Build validation for existence of required abstract methods in AppLoader
 [X] Implement `BROKEN` and `MISSING_METHODS` class vars in `TDEApp` base class
+[X] Build a base widget for the "TDEMainWidget" to provide some built-in functionality.
+[X] Create an 'initialized' message for the ProcessManager to trigger on the app's main widget.
+[X] Implement the window styles dictionary from Textual-window library
+[X] Make the ProcessManager set the `process_id` attribute on the main widget of the app
+
+## Window Service
+
+[X] Implement the `get_window_by_process_id` method in WindowService
 
 ## App Selector / File Associator
 

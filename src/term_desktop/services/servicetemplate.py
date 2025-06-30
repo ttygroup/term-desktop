@@ -38,6 +38,26 @@ class ServiceTemplate(BaseService):
     # accessed by anything else in TDE, including other services.
 
     async def start(self) -> bool:
+        """Start the [INSERT SERVICE NAME HERE] service."""
+
+        # Example of using a worker inside of a service
+        # Any extra positional and keyword arguments that not part of the
+        # run_worker function will be passed to the callback function.   
+        # Note this is set to use thread workers by default, and so the
+        # callback function should NOT be async.  
+        #    
+        # worker = self.run_worker(
+        #     self._func_to_run,
+        #     any_args_here,
+        #     name="AppLoaderWorker",
+        #     description="Discovering apps in directories",
+        #     group="AppLoader",
+        #     exclusive=True,
+        #     keyword1 = "some_value_here",
+        #     keyword2 = "another_value_here",
+        # )
+        # some_value = await worker.wait()
+
         if True:
             return True
         else:

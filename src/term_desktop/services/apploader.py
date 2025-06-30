@@ -64,21 +64,6 @@ class AppLoader(BaseService):
         """
         return self._failed_apps
 
-    def add_directory(self, directory: Path) -> None:
-        """
-        Add a directory to the list of directories to search for app files.
-
-        Args:
-            directory (Path): The directory to add.
-
-        - Function is pure: [no]
-        """
-        assert isinstance(directory, Path), "directory must be a Path object"
-        if not directory.exists():
-            raise FileNotFoundError(f"Directory does not exist: {directory}")
-        self.directories.append(directory)
-        log.debug(f"Added apps directory: {directory}")
-
     async def start(self) -> bool:
         """Start the AppLoader service.
         If it returns True, the self.registered_apps dictionary will be available.
@@ -91,7 +76,15 @@ class AppLoader(BaseService):
 
         try:
             self._failed_apps.clear()
-            self._registered_apps = await self._discover_apps(self.directories)
+            worker = self.run_worker(
+                self._discover_apps,
+                self.directories,
+                name="AppLoaderWorker",
+                description="Discovering apps in directories",
+                group="AppLoader",
+                exclusive=True,
+            )
+            self._registered_apps = await worker.wait()
         except Exception as e:
             log.error(f"Failed to discover apps: {str(e)}")
             raise RuntimeError("AppLoader failed to start due to an error.") from e
@@ -109,6 +102,21 @@ class AppLoader(BaseService):
         log("Stopping AppLoader service")
         self.registered_apps.clear()
         return True
+
+    def add_directory(self, directory: Path) -> None:
+        """
+        Add a directory to the list of directories to search for app files.
+
+        Args:
+            directory (Path): The directory to add.
+
+        - Function is pure: [no]
+        """
+        assert isinstance(directory, Path), "directory must be a Path object"
+        if not directory.exists():
+            raise FileNotFoundError(f"Directory does not exist: {directory}")
+        self.directories.append(directory)
+        log.debug(f"Added apps directory: {directory}")
     
     ################
     # ~ Internal ~ #
@@ -116,7 +124,7 @@ class AppLoader(BaseService):
     # This section is for methods that are only used internally 
     # These should be marked with a leading underscore.
 
-    async def _discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEApp]]:
+    def _discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEApp]]:
         """
         Scan the provided app directories for apps and attempt to load them.
         Called by AppLoader.start() (above)

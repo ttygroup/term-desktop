@@ -55,7 +55,10 @@ class TemplateContent(TDEMainWidget):
         # You can also access the active window using the process ID.
         # The process_id is available as self.process_id, which is set by the process manager.
         # To get the window by current process ID:
-        current_window = self.services.window_service.get_window_by_process_id(self.process_id)
+        current_window = self.services.window_service.get_window_by_process_id(
+            self.process_id 
+        ) 
+        self.log(current_window)
 
     @on(events.DescendantFocus)
     def descendant_focused(self, event: events.DescendantFocus) -> None:

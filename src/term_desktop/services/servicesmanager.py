@@ -4,7 +4,7 @@
 from __future__ import annotations
 from textual.dom import DOMNode
 
-# from textual import work
+from textual import work
 
 # Local imports
 from term_desktop.services.servicebase import BaseService
@@ -44,6 +44,7 @@ class ServicesManager(DOMNode):
         self.log("ServicesManager starting all services...")
 
         try:
+            assert isinstance(self.process_manager, BaseService)
             process_manager_success = await self.process_manager.start()
         except RuntimeError:
             raise
@@ -54,6 +55,7 @@ class ServicesManager(DOMNode):
                 raise RuntimeError("ProcessManager startup returned False after running.")
 
         try:
+            assert isinstance(self.app_loader, BaseService)
             app_loader_success = await self.app_loader.start()
         except RuntimeError:
             raise
@@ -64,6 +66,7 @@ class ServicesManager(DOMNode):
                 raise RuntimeError("AppLoader startup returned False after running.")
 
         try:
+            assert isinstance(self.window_service, BaseService)
             window_service_success = await self.window_service.start()
         except RuntimeError:
             raise
