@@ -69,7 +69,10 @@ class StartMenu(SlideContainer):
             if tde_app_type:
                 self.log.debug(f"Launching app: {tde_app_type.APP_NAME} ({event.option_id})")
                 services = self.app.query_one(ServicesWidget).services
-                await services.process_manager.launch_process(tde_app_type)
+
+                # This will get made into a sync method with a worker in the future
+                # so that this calling method does not need to await this call.
+                await services.process_manager.request_process_launch(tde_app_type)
             self.close()
 
     @on(SlideContainer.SlideCompleted)

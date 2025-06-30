@@ -1,17 +1,17 @@
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
-
-
-from abc import ABC, abstractmethod
 
 
 class BaseService(ABC):
 
     def __init__(self, services_manager: ServicesManager) -> None:
         self.services_manager = services_manager
+
+    # Just start and stop at the moment.
+    # Lots of room for expansion.
 
     @abstractmethod
     async def start(self) -> bool: ...

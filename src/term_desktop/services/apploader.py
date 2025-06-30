@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Type
 import os
 import importlib.util
 from pathlib import Path
-
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
 
@@ -18,6 +17,10 @@ from term_desktop.services.servicebase import BaseService
 
 
 class AppLoader(BaseService):
+
+    #####################
+    # ~ Initialzation ~ #
+    #####################
 
     def __init__(
         self,
@@ -34,6 +37,12 @@ class AppLoader(BaseService):
 
         builtin_apps = next(iter(term_desktop.apps.__path__))
         self.directories.extend([Path(builtin_apps)])
+
+    ####################
+    # ~ External API ~ #
+    ####################
+    # This section is for methods or properties that might need to be
+    # accessed by anything else in TDE, including other services.
 
     @property
     def registered_apps(self) -> dict[str, Type[TDEApp]]:
@@ -82,7 +91,7 @@ class AppLoader(BaseService):
 
         try:
             self._failed_apps.clear()
-            self._registered_apps = await self.discover_apps(self.directories)
+            self._registered_apps = await self._discover_apps(self.directories)
         except Exception as e:
             log.error(f"Failed to discover apps: {str(e)}")
             raise RuntimeError("AppLoader failed to start due to an error.") from e
@@ -100,8 +109,14 @@ class AppLoader(BaseService):
         log("Stopping AppLoader service")
         self.registered_apps.clear()
         return True
+    
+    ################
+    # ~ Internal ~ #
+    ################
+    # This section is for methods that are only used internally 
+    # These should be marked with a leading underscore.
 
-    async def discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEApp]]:
+    async def _discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEApp]]:
         """
         Scan the provided app directories for apps and attempt to load them.
         Called by AppLoader.start() (above)
@@ -160,7 +175,7 @@ class AppLoader(BaseService):
         for _unique_key_, (file_or_dir, path) in apps_to_load.items():
 
             try:
-                AppClass = self.load_app_class(path, file_or_dir)
+                AppClass = self._load_app_class(path, file_or_dir)
             except ImportError as e:
                 log.error(f"Failed to load app {path.name}: {str(e)}")
                 self._failed_apps[path.name] = e
@@ -170,10 +185,19 @@ class AppLoader(BaseService):
                 self._failed_apps[path.name] = e
                 continue
 
-            assert AppClass.APP_ID is not None  # validated by the TDEApp ABC
+            # ~ Validate the app class ~ #
+            try:
+                AppClass.validate()
+            except NotImplementedError as e:
+                log.error(f"App {AppClass.__name__} failed validation: {str(e)}")
+                self._failed_apps[path.name] = e
+                continue
+
+            assert AppClass.APP_ID is not None  # validated above
             try:
                 loaded_apps[AppClass.APP_ID] = AppClass
             except KeyError as e:
+                #! NOTE: This should not be possible, as we check for duplicates above.
                 log.error(
                     f"App was loaded successfully, but app with ID "
                     f"{AppClass.APP_ID} is already registered!"
@@ -182,10 +206,10 @@ class AppLoader(BaseService):
 
         return loaded_apps
 
-    def load_app_class(self, path: Path, file_or_dir: str) -> Type[TDEApp]:
+    def _load_app_class(self, path: Path, file_or_dir: str) -> Type[TDEApp]:
         """
         Load an app class from a given path.
-        Called by AppLoader.discover_apps (above)
+        Called by AppLoader._discover_apps (above)
 
         Args:
             path (Path): Path to the app file.
@@ -222,7 +246,6 @@ class AppLoader(BaseService):
             raise ImportError(f"Failed to load module for app {module_name}: {str(e)}") from e
 
         ### ~ Stage 3: Retrieve the app class from module ~ ###
-        # new plan: get dict of all classes in the module, then check for TDEApp subclass
         try:
             AppClass = next(
                 cls
@@ -234,4 +257,7 @@ class AppLoader(BaseService):
                 f"{module_name} did not return a valid TDEApp class."
                 "Ensure that your main app class inherits from TDEApp."
             )
+        except Exception as e:
+            raise ImportError(f"Failed to retrieve app class from module {module_name}: {str(e)}") from e
+
         return AppClass

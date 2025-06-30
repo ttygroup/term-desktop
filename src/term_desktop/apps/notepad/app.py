@@ -1,31 +1,120 @@
-"""notepad.py
-It's not necessary for this to have the same name
-as the package. Just does here.
+"""app.py
+Entry point for the Notepad application in TDE (Term Desktop Environment).
+Apps inside directories MUST be named either `app.py` or `main.py`.
+That can easily have more allowed names added to it if we desire.
 """
 
 # python imports
 from __future__ import annotations
 
-# from typing import Any #, Type
-
 # Textual imports
-from textual import on, events, work
-from textual.widget import Widget
+from textual import on, work, events
 from textual.app import ComposeResult
 from textual.widgets import TextArea, Button  # , Static
 from textual.containers import Horizontal, Container
 from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.geometry import Offset
+from textual.binding import Binding
 
+# Unused Textual imports (for reference):
+# from textual.css.query import NoMatches
+# from textual.message import Message
+
+# Textual library imports
+from textual_window.window import WindowStylesDict
 
 # Local imports
-from term_desktop.app_sdk.appbase import (
+from term_desktop.app_sdk import (
     TDEApp,
+    TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
     CustomWindowMounts,
 )
+
+
+class Notepad(TDEApp):
+
+    APP_NAME = "Notepad"
+    APP_ID = "notepad"
+    ICON = "📝"
+    DESCRIPTION = "TDE Notepad, simple text editor for TDE."
+
+    def launch_mode(self) -> LaunchMode:
+        """Returns the launch mode for the app. \n
+
+        Must return one of the `LaunchMode` enum values.
+        """
+        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
+
+    def get_main_content(self) -> type[TDEMainWidget] | None:
+        """Returns the class definiton for the main content widget for the app. \n
+        Must return a definition of a Widget subclass, not an instance of it.
+
+        If the TDEapp is a normal app (runs in a window or full screen), this must return
+        the main content Widget for your app. If the TDEapp is a daemon, this method must
+        return None.
+        """
+        return NotepadWidget
+
+    def custom_window_settings(self) -> CustomWindowSettings:
+        """Returns the settings for the window to be created. \n
+
+        This is not part of the contract and not necessary to implement.
+        This method can be optionally implemented to provide custom window settings.
+        """
+        return {
+            # This returns an empty dictionary when not overridden.
+            # see CustomWindowSettings for more options
+        }
+
+    def custom_window_mounts(self) -> CustomWindowMounts:
+
+        return {
+            "below_topbar": CommandBar,
+        }
+
+    def window_styles(self) -> WindowStylesDict:
+
+        return {
+            "width": 45,  #
+            "height": 25,  #
+            # "max_width": None,  #  default is 'size of the parent container'
+            # "max_height": None,  # default is 'size of the parent container'
+            # "min_width": 12,  #
+            # "min_height": 6,  #
+        }
+
+
+class NotepadWidget(TDEMainWidget):
+
+    DEFAULT_CSS = """
+    TextArea { border: none !important; }
+    """
+
+    def compose(self) -> ComposeResult:
+
+        yield TextArea()
+
+    @on(TDEMainWidget.Initialized)
+    def initialized(self) -> None:
+        self.on_focus()
+
+    def on_focus(self) -> None:
+        self.query_one(TextArea).focus()
+
+    @on(events.DescendantFocus)
+    def descendant_focused(self, event: events.DescendantFocus) -> None:
+
+        window = self.services.window_service.get_window_by_process_id(self.process_id)
+        window.query_one(CommandBar).add_class("focused")
+
+    @on(events.DescendantBlur)
+    def descendant_blurred(self, event: events.DescendantBlur) -> None:
+
+        window = self.services.window_service.get_window_by_process_id(self.process_id)
+        window.query_one(CommandBar).remove_class("focused")
 
 
 class CommandBar(Horizontal):
@@ -145,74 +234,3 @@ class NotepadMenu(ModalScreen[None]):
 
         if event.button.id == "new_note":
             pass
-
-
-class NotepadWidget(Widget):
-
-    DEFAULT_CSS = """
-    TextArea { border: none !important; }
-    """
-
-    def compose(self) -> ComposeResult:
-
-        yield CommandBar()
-        yield TextArea()
-
-    def on_mount(self) -> None:
-
-        self.query_one(TextArea).focus()
-
-    def on_focus(self) -> None:
-        self.query_one(TextArea).focus()
-
-    @on(events.DescendantFocus)
-    def descendant_focused(self, event: events.DescendantFocus) -> None:
-
-        self.query_one(CommandBar).add_class("focused")
-
-    @on(events.DescendantBlur)
-    def descendant_blurred(self, event: events.DescendantBlur) -> None:
-
-        self.query_one(CommandBar).remove_class("focused")
-
-
-class Notepad(TDEApp):
-
-    APP_NAME = "Notepad"
-    APP_ID = "notepad"
-    ICON = "📝"
-    DESCRIPTION = "TDE Notepad, simple text editor for TDE."
-
-    def launch_mode(self) -> LaunchMode:
-        """Returns the launch mode for the app. \n
-
-        Must return one of the `LaunchMode` enum values.
-        """
-        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
-
-    def get_main_content(self) -> type[Widget] | None:
-        """Returns the class definiton for the main content widget for the app. \n
-        Must return a definition of a Widget subclass, not an instance of it.
-
-        If the TDEapp is a normal app (runs in a window or full screen), this must return
-        the main content Widget for your app. If the TDEapp is a daemon, this method must
-        return None.
-        """
-        return NotepadWidget
-
-    def custom_window_settings(self) -> CustomWindowSettings:
-        """Returns the settings for the window to be created. \n
-
-        This is not part of the contract and not necessary to implement.
-        This method can be optionally implemented to provide custom window settings.
-        """
-        return {
-            # This returns an empty dictionary when not overridden.
-            # see CustomWindowSettings for more options
-        }
-
-    def custom_window_mounts(self) -> CustomWindowMounts:
-
-        return {
-            "below_topbar": CommandBar,
-        }

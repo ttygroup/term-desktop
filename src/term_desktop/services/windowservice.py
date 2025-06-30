@@ -3,24 +3,27 @@
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Awaitable, cast  # , Any
-
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
-    from term_desktop.app_sdk.appbase import DefaultWindowSettings, CustomWindowMounts
+    from term_desktop.app_sdk import TDEMainWidget, DefaultWindowSettings, CustomWindowMounts
 
 # Textual imports
 from textual import log
 from textual.widget import Widget
-from term_desktop.services.servicebase import BaseService
 
 # Textual library imports
 from textual_window import window_manager, Window
+from textual_window.window import WindowStylesDict
 
 # Local imports
-# from term_desktop.app_sdk.appbase import TDEApp
+from term_desktop.services.servicebase import BaseService
 
 
 class WindowService(BaseService):
+
+    #####################
+    # ~ Initialzation ~ #
+    #####################
 
     def __init__(
         self,
@@ -45,6 +48,12 @@ class WindowService(BaseService):
         super().__init__(services_manager)
         self.window_manager = window_manager
 
+    ####################
+    # ~ External API ~ #
+    ####################
+    # This section is for methods that might need to be accessed by
+    # anything else in TDE, including other services.
+
     async def start(self) -> bool:
         log("Starting Window service")
         # nothing to do here yet
@@ -67,16 +76,18 @@ class WindowService(BaseService):
         # the Textual-Window library.
         self.window_manager.register_mounting_callback(callback, callback_id)
 
-    def create_new_window(
+    async def create_new_window(
         self,
-        content_instance: Widget,
-        app_id: str,
+        content_instance: TDEMainWidget,
+        process_id: str,
         window_dict: DefaultWindowSettings,
+        styles_dict: WindowStylesDict,
         custom_mounts: CustomWindowMounts,
         callback_id: str,
     ) -> None:
         """Pass in all the ingredients to mount a window in the window manager, using the
         desired callback ID (which was set using the register_mounting_callback method).
+
         This is used by the ProcessManager to mount windows for apps that are launched.
         """
         # For the forseeable future, there will only be one callback ID, which is the
@@ -84,9 +95,18 @@ class WindowService(BaseService):
         # Textual-Window library, which is designed to work as a plugin and thus
         # be flexible enough to support multiple callback IDs in the future.
 
-        new_window = Window(content_instance, id=app_id, **window_dict)
-        self.window_manager.mount_window(new_window, callback_id)
+        log(f"Creating new window attached to process ID '{process_id}'.")
+
+        new_window = Window(
+            content_instance,
+            id=process_id,
+            styles_dict=styles_dict,
+            **window_dict,
+        )
+        await self.window_manager.mount_window(new_window, callback_id)
         # NOTE: Mounted windows will register themselves with the window manager automatically.
+        # The widget ID will be the process ID. That means we can use the inner window
+        # manager to get the window by process ID later on.
 
         for mount_point, MountWidget in custom_mounts.items():
             mount_widget_def = cast(type[Widget], MountWidget)
@@ -106,6 +126,35 @@ class WindowService(BaseService):
                 new_window.mount(mount_widget, after="BottomBar")
             else:
                 raise ValueError(f"Invalid mount point '{mount_point}'.")
+
+        content_instance.post_initialized(new_window)
+
+    def get_window_by_process_id(self, process_id: int | str) -> Window:
+        """Get the current window for a given process ID.
+        This will only work if the process ID has an associated window.
+
+        Args:
+            process_id: The ID of the window to retrieve.
+        Returns:
+            Window: The window object with the specified ID.
+        Raises:
+            ValueError: If the window cannot be found or if the process ID is invalid.
+        """
+        try:
+            process_id = str(process_id)  # Ensure process_id is a string
+        except Exception as e:
+            raise ValueError(
+                f"Invalid process ID '{process_id}'. Process ID must be an integer "
+                "or a string that can be converted to an integer."
+            ) from e
+
+        windows_dict = self.window_manager.get_windows_as_dict()
+        try:
+            window = windows_dict[process_id]
+        except KeyError as e:
+            raise ValueError(f"Window with process ID '{process_id}' not found in the window manager.") from e
+        else:
+            return window
 
     # ? This is not yet used by anything yet in TDE land.
     def remove_window(self, window: Window | str) -> None:

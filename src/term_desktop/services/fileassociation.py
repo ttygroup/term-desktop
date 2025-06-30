@@ -18,6 +18,10 @@ from term_desktop.services.servicebase import BaseService
 
 class FileAssociationService(BaseService):
 
+    #####################
+    # ~ Initialzation ~ #
+    #####################
+
     def __init__(
         self,
         services_manager: ServicesManager,
@@ -26,6 +30,12 @@ class FileAssociationService(BaseService):
         Initialize the [INSERT SERVICE NAME HERE]
         """
         super().__init__(services_manager)
+
+    ####################
+    # ~ External API ~ #
+    ####################
+    # This section is for methods or properties that might need to be
+    # accessed by anything else in TDE, including other services.
 
     async def start(self) -> bool:
         if True:
@@ -38,3 +48,9 @@ class FileAssociationService(BaseService):
             return True
         else:
             return False
+
+    ################
+    # ~ Internal ~ #
+    ################
+    # This section is for methods that are only used internally 
+    # These should be marked with a leading underscore.

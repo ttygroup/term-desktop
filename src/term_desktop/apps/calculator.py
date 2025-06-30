@@ -12,24 +12,77 @@ from decimal import Decimal
 
 # Textual imports
 from textual import on, events
-
-# from textual.widgets import Static
-# from textual.binding import Binding
-from textual.widget import Widget
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.css.query import NoMatches
 from textual.reactive import var
 from textual.widgets import Button, Digits
 
-from term_desktop.app_sdk.appbase import (
+# Unused Textual imports (for reference):
+# from textual import events, on
+# from textual.message import Message
+# from textual.binding import Binding
+
+# Textual library imports
+from textual_window.window import WindowStylesDict
+
+# Local imports
+from term_desktop.app_sdk import (
     TDEApp,
+    TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
 )
 
 
-class CalculatorApp(Widget):
+class Calculator(TDEApp):
+
+    APP_NAME = "Calculator"
+    APP_ID = "calculator"
+    ICON = "🧮"
+    DESCRIPTION = "Calculate things, mostly numbers."
+
+    def launch_mode(self) -> LaunchMode:
+        """Returns the launch mode for the app. \n
+
+        Must return one of the `LaunchMode` enum values.
+        """
+        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
+
+    def get_main_content(self) -> type[TDEMainWidget] | None:
+        """Returns the class definiton for the main content widget for the app. \n
+        Must return a definition of a Widget subclass, not an instance of it.
+
+        If the TDEapp is a normal app (runs in a window or full screen), this must return
+        the main content Widget for your app. If the TDEapp is a daemon, this method must
+        return None.
+        """
+        return CalculatorApp
+
+    def custom_window_settings(self) -> CustomWindowSettings:
+        """Returns the settings for the window to be created. \n
+
+        This is not part of the contract and not necessary to implement.
+        This method can be optionally implemented to provide custom window settings.
+        """
+        return {
+            # This returns an empty dictionary when not overridden.
+            # see CustomWindowSettings for more options
+        }
+
+    def window_styles(self) -> WindowStylesDict:
+
+        return {
+            "width": 45,  #
+            "height": 25,  #
+            # "max_width": None,  #  default is 'size of the parent container'
+            # "max_height": None,  # default is 'size of the parent container'
+            "min_width": 30,  #
+            "min_height": 20,  #
+        }
+
+
+class CalculatorApp(TDEMainWidget):
     """A working 'desktop' calculator."""
 
     DEFAULT_CSS = """
@@ -209,39 +262,3 @@ class CalculatorApp(Widget):
         if self.value:
             self.right = Decimal(self.value)
         self._do_math()
-
-
-class Calculator(TDEApp):
-
-    APP_NAME = "Calculator"
-    APP_ID = "calculator"
-    ICON = "🧮"
-    DESCRIPTION = "Calculate things, mostly numbers."
-
-    def launch_mode(self) -> LaunchMode:
-        """Returns the launch mode for the app. \n
-
-        Must return one of the `LaunchMode` enum values.
-        """
-        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
-
-    def get_main_content(self) -> type[Widget] | None:
-        """Returns the class definiton for the main content widget for the app. \n
-        Must return a definition of a Widget subclass, not an instance of it.
-
-        If the TDEapp is a normal app (runs in a window or full screen), this must return
-        the main content Widget for your app. If the TDEapp is a daemon, this method must
-        return None.
-        """
-        return CalculatorApp
-
-    def custom_window_settings(self) -> CustomWindowSettings:
-        """Returns the settings for the window to be created. \n
-
-        This is not part of the contract and not necessary to implement.
-        This method can be optionally implemented to provide custom window settings.
-        """
-        return {
-            # This returns an empty dictionary when not overridden.
-            # see CustomWindowSettings for more options
-        }

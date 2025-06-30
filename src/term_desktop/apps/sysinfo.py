@@ -11,30 +11,78 @@ import sys
 import platform
 
 # Textual imports
-# from textual import events, on
 from textual.widgets import Static
 
+# Unused Textual imports (for reference):
+# from textual import events, on
 # from textual.message import Message
 # from textual.binding import Binding
-from textual.widget import Widget
 
-from term_desktop.app_sdk.appbase import (
+# Textual library imports
+from textual_window.window import WindowStylesDict
+
+# Local imports
+from term_desktop.app_sdk import (
     TDEApp,
+    TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
 )
 
 
-class SysInfoWidget(Widget):
+class SysInfo(TDEApp):
+
+    APP_NAME = "System Information"
+    APP_ID = "sysinfo"
+    ICON = "🛈"
+    DESCRIPTION = "View static system info such as OS, CPU, UID/GID, etc."
+
+    def launch_mode(self) -> LaunchMode:
+        """Returns the launch mode for the app. \n
+
+        Must return one of the `LaunchMode` enum values.
+        """
+        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
+
+    def get_main_content(self) -> type[TDEMainWidget] | None:
+        """Returns the class definiton for the main content widget for the app. \n
+        Must return a definition of a Widget subclass, not an instance of it.
+
+        If the TDEapp is a normal app (runs in a window or full screen), this must return
+        the main content Widget for your app. If the TDEapp is a daemon, this method must
+        return None.
+        """
+        return SysInfoWidget
+
+    def custom_window_settings(self) -> CustomWindowSettings:
+        """Returns the settings for the window to be created. \n
+
+        This is not part of the contract and not necessary to implement.
+        This method can be optionally implemented to provide custom window settings.
+        """
+        return {
+            # This returns an empty dictionary when not overridden.
+            # see CustomWindowSettings for more options
+        }
+
+    def window_styles(self) -> WindowStylesDict:
+
+        return {
+            "width": 45,  #
+            "height": 25,  #
+            # "max_width": None,  #  default is 'size of the parent container'
+            # "max_height": None,  # default is 'size of the parent container'
+            # "min_width": 12,  #
+            # "min_height": 6,  #
+        }
+
+
+class SysInfoWidget(TDEMainWidget):
 
     DEFAULT_CSS = """
-    TemplateContent {
-        & > #my_static { border: solid red; }
     #title { border: solid $primary; }
-    #content { width: auto; height: auto; }        
-    }    
+    #content { width: auto; height: auto; }         
     """
-    # BINDINGS = []
 
     def compose(self):
 
@@ -100,39 +148,3 @@ class SysInfoWidget(Widget):
 
         # Fallback
         return platform.processor() or "Unknown"
-
-
-class SysInfo(TDEApp):
-
-    APP_NAME = "System Information"
-    APP_ID = "sysinfo"
-    ICON = "🛈"
-    DESCRIPTION = "View static system info such as OS, CPU, UID/GID, etc."
-
-    def launch_mode(self) -> LaunchMode:
-        """Returns the launch mode for the app. \n
-
-        Must return one of the `LaunchMode` enum values.
-        """
-        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
-
-    def get_main_content(self) -> type[Widget] | None:
-        """Returns the class definiton for the main content widget for the app. \n
-        Must return a definition of a Widget subclass, not an instance of it.
-
-        If the TDEapp is a normal app (runs in a window or full screen), this must return
-        the main content Widget for your app. If the TDEapp is a daemon, this method must
-        return None.
-        """
-        return SysInfoWidget
-
-    def custom_window_settings(self) -> CustomWindowSettings:
-        """Returns the settings for the window to be created. \n
-
-        This is not part of the contract and not necessary to implement.
-        This method can be optionally implemented to provide custom window settings.
-        """
-        return {
-            # This returns an empty dictionary when not overridden.
-            # see CustomWindowSettings for more options
-        }
