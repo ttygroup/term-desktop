@@ -5,7 +5,7 @@ import os
 import importlib.util
 from pathlib import Path
 if TYPE_CHECKING:
-    from term_desktop.services.servicesmanager import ServicesManager
+    from term_desktop.services.manager import ServicesManager
 
 # Textual imports
 from textual import log

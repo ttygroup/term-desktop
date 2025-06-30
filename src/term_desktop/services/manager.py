@@ -8,9 +8,9 @@ from textual import work
 
 # Local imports
 from term_desktop.services.servicebase import BaseService
-from term_desktop.services.processmanager import ProcessManager
+from term_desktop.services.processes import ProcessManager
 from term_desktop.services.apploader import AppLoader
-from term_desktop.services.windowservice import WindowService
+from term_desktop.services.windows import WindowService
 
 
 class ServicesManager(DOMNode):

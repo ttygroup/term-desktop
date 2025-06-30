@@ -6,8 +6,7 @@ from typing import TypedDict, Any, Callable, TYPE_CHECKING
 from abc import ABC, abstractmethod
 from enum import Enum
 if TYPE_CHECKING:
-    from term_desktop.services.servicesmanager import ServicesManager
-    from term_desktop.services.processmanager import AppContext
+    from term_desktop.services.manager import ServicesManager
     from textual_window.window import (
         Window,
         STARTING_HORIZONTAL,
@@ -19,6 +18,7 @@ if TYPE_CHECKING:
 # Textual imports
 from textual.message import Message
 from textual.widget import Widget
+
 
 
 class LaunchMode(Enum):
@@ -68,6 +68,18 @@ class CustomWindowMounts(TypedDict, total=False):
     right_pane: type[Widget]  #        mounted to the right of the content area
     above_bottombar: type[Widget]  #   mounted above the bottom bar
     below_bottombar: type[Widget]  #   mounted below the bottom bar
+
+
+class AppContext(TypedDict, total=True):
+    """Context for the app, passed to the main content widget. \n
+
+    This is used to provide access to the services manager and other context-specific
+    information that the app might need.
+    """
+
+    process_id: str  # The ID of the process running the app.
+    services: ServicesManager  # The services manager instance
+    # Add more context-specific fields as needed.
 
 
 class TDEApp(ABC):

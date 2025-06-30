@@ -4,7 +4,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Awaitable, cast  # , Any
 if TYPE_CHECKING:
-    from term_desktop.services.servicesmanager import ServicesManager
+    from term_desktop.services.manager import ServicesManager
     from term_desktop.app_sdk import TDEMainWidget, DefaultWindowSettings, CustomWindowMounts
 
 # Textual imports

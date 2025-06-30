@@ -2,11 +2,12 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING, TypedDict  # , Any
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from term_desktop.services.servicesmanager import ServicesManager
+    from term_desktop.services.manager import ServicesManager
     from term_desktop.app_sdk.appbase import (
         TDEApp,
+        AppContext,
         DefaultWindowSettings,
         TDEMainWidget,
     )
@@ -14,24 +15,10 @@ if TYPE_CHECKING:
 # Textual imports
 from textual import log
 
-# Textual library imports
-# from textual_window import Window
-
 # Local imports
 from term_desktop.services.servicebase import BaseService
 from term_desktop.app_sdk import LaunchMode
 
-
-class AppContext(TypedDict, total=True):
-    """Context for the app, passed to the main content widget. \n
-
-    This is used to provide access to the services manager and other context-specific
-    information that the app might need.
-    """
-
-    process_id: str  # The ID of the process running the app.
-    services: ServicesManager  # The services manager instance
-    # Add more context-specific fields as needed.
 
 
 class ProcessManager(BaseService):

@@ -1,5 +1,5 @@
 from textual.widget import Widget
-from term_desktop.services.servicesmanager import ServicesManager
+from term_desktop.services.manager import ServicesManager
 
 
 class ServicesWidget(Widget):
