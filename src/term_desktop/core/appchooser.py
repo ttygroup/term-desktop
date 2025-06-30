@@ -21,10 +21,10 @@ from textual.widgets import (
 )
 
 # Local imports
-from term_desktop.appbase import TermDApp
+from term_desktop.app_sdk.appbase import TDEApp
 
 
-class AppChooser(ModalScreen[TermDApp]):
+class AppChooser(ModalScreen[TDEApp]):
     """A modal screen for choosing an application to run a selected file."""
 
     BINDINGS = [

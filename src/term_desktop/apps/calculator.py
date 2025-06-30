@@ -1,77 +1,119 @@
 """
 calculator.py
 
-An implementation of a classic calculator, with a layout inspired by macOS calculator.
-
-Works like a real calculator. Click the buttons or press the equivalent keys.
+The calculator app from the examples folder in the Textual github repository.
 """
 
 # Python imports
 from __future__ import annotations
-from typing import Any, Type
+
+# from typing import Any, Type
 from decimal import Decimal
 
 # Textual imports
 from textual import on, events
-
-# from textual.widgets import Static
-from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.css.query import NoMatches
 from textual.reactive import var
 from textual.widgets import Button, Digits
 
+# Unused Textual imports (for reference):
+# from textual import events, on
+# from textual.message import Message
+# from textual.binding import Binding
+
 # Textual library imports
-# Would go here if you have any
+from textual_window.window import WindowStylesDict
 
 # Local imports
-from term_desktop.appbase import TermDApp
+from term_desktop.app_sdk import (
+    TDEApp,
+    TDEMainWidget,
+    LaunchMode,
+    CustomWindowSettings,
+)
 
 
-class Calculator(TermDApp):
+class Calculator(TDEApp):
 
-    APP_NAME = (
-        "Calculator"  # APP_NAME is used for display purposes, it can have spaces and special characters.
-    )
-    APP_ID = "calculator"  # APP_ID is used for internals. The same as `id` in any widget.
+    APP_NAME = "Calculator"
+    APP_ID = "calculator"
+    ICON = "🧮"
+    DESCRIPTION = "Calculate things, mostly numbers."
 
-    # APP_NAME = None         # The validation will fail if either of these are not set.
-    # APP_ID = None           # Try uncommenting these lines to see the validation error.
+    def launch_mode(self) -> LaunchMode:
+        """Returns the launch mode for the app. \n
+
+        Must return one of the `LaunchMode` enum values.
+        """
+        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
+
+    def get_main_content(self) -> type[TDEMainWidget] | None:
+        """Returns the class definiton for the main content widget for the app. \n
+        Must return a definition of a Widget subclass, not an instance of it.
+
+        If the TDEapp is a normal app (runs in a window or full screen), this must return
+        the main content Widget for your app. If the TDEapp is a daemon, this method must
+        return None.
+        """
+        return CalculatorApp
+
+    def custom_window_settings(self) -> CustomWindowSettings:
+        """Returns the settings for the window to be created. \n
+
+        This is not part of the contract and not necessary to implement.
+        This method can be optionally implemented to provide custom window settings.
+        """
+        return {
+            # This returns an empty dictionary when not overridden.
+            # see CustomWindowSettings for more options
+        }
+
+    def window_styles(self) -> WindowStylesDict:
+
+        return {
+            "width": 33,  #
+            "height": 30,  #
+            # "max_width": None,  #  default is 'size of the parent container'
+            # "max_height": None,  # default is 'size of the parent container'
+            "min_width": 33,  #
+            "min_height": 30,  #
+        }
+
+
+class CalculatorApp(TDEMainWidget):
+    """A working 'desktop' calculator."""
 
     DEFAULT_CSS = """
-    Calculator {
-        width: 50;
-        height: 31;
-        & > #content_pane { 
-            /* padding: 1 0;  You'd change CSS for #content_pane here if desired. */
-            /* Any widgets inside the window have to have CSS set inside of #content_pane. */            
-            & > #my_static { border: solid red; }
-            & > #calculator_container {
-                layout: grid;
-                grid-size: 4;
-                grid-gutter: 1 2;
-                grid-columns: 1fr;
-                grid-rows: 2fr 1fr 1fr 1fr 1fr 1fr;
-                margin: 1 2;
-                min-height: 25;
-                min-width: 26;
-                height: 100%;
-                &:inline { margin: 0 2; }
-            }
-            & > Button { width: 100%; height: 100%; }
-            & > #numbers {
-                column-span: 4;
-                padding: 0 1;
-                height: 100%;
-                background: $panel;
-                color: $text;
-                content-align: center middle;
-                text-align: right;
-            }
-            & > #number-0 { column-span: 2; }    
-        }  
-    }    
+    #calculator {
+        layout: grid;
+        grid-size: 4;
+        grid-gutter: 1 2;
+        grid-columns: 1fr;
+        grid-rows: 2fr 1fr 1fr 1fr 1fr 1fr;
+        margin: 1 2;
+        min-height: 25;
+        min-width: 26;
+        height: 100%;
+        &:inline {
+            margin: 0 2;
+        }
+    }
+    Button {
+        width: 100%;
+        height: 100%;
+    }
+    #numbers {
+        column-span: 4;
+        padding: 0 1;
+        height: 100%;
+        background: $panel;
+        color: $text;
+        content-align: center middle;
+        text-align: right;
+    }
+    #number-0 { column-span: 2; }
     """
 
     numbers = var("0")
@@ -94,59 +136,6 @@ class Calculator(TermDApp):
         "plus": "plus",
     }
 
-    BINDINGS = [
-        Binding("ctrl+w", "close_window", "Close Window", priority=True),
-        Binding("ctrl+d", "minimize_window", "Minimize Window", priority=True),
-        # You can remove the above bindings if you dont want them.
-        # Note that `close_window` and `minimize_window` are already defined in the base
-        # Textual-Window library, but the base class does not have priority set to True.
-        # Priority will make close and minimize shortcuts work even when you have focus
-        # on children inside of the window, like TextArea or Input widgets.
-        # Add any additional bindings you need here.
-    ]
-
-    def __init__(self, id: str, **kwargs: Any):
-        super().__init__(  #! Note, you cannot set the id manually here. It must be set by the app loader.
-            id=id,  # it MUST be taken as an argument and passed to super().__init__.
-            start_open=True,  # The app sets the IDs and manages them.
-            allow_maximize=True,
-            starting_horizontal="right",
-            starting_vertical="bottom",
-            # Customize window settings here
-            **kwargs,
-        )
-
-    # @on(events.Focus)
-    # def on_mount(self) -> None:
-    #     # Here you can set which widgets inside the window you would like to gain focus
-    #     # when the window is focused or first opened.
-    #     self.query_one("#numbers").focus()
-
-    def compose(self) -> ComposeResult:
-        """Add our buttons."""
-        with Container(id="calculator_container"):
-            yield Digits(id="numbers")
-            yield Button("AC", id="ac", variant="primary")
-            yield Button("C", id="c", variant="primary")
-            yield Button("+/-", id="plus-minus", variant="primary")
-            yield Button("%", id="percent", variant="primary")
-            yield Button("÷", id="divide", variant="warning")
-            yield Button("7", id="number-7", classes="number")
-            yield Button("8", id="number-8", classes="number")
-            yield Button("9", id="number-9", classes="number")
-            yield Button("×", id="multiply", variant="warning")
-            yield Button("4", id="number-4", classes="number")
-            yield Button("5", id="number-5", classes="number")
-            yield Button("6", id="number-6", classes="number")
-            yield Button("-", id="minus", variant="warning")
-            yield Button("1", id="number-1", classes="number")
-            yield Button("2", id="number-2", classes="number")
-            yield Button("3", id="number-3", classes="number")
-            yield Button("+", id="plus", variant="warning")
-            yield Button("0", id="number-0", classes="number")
-            yield Button(".", id="point")
-            yield Button("=", id="equals", variant="warning")
-
     def watch_numbers(self, value: str) -> None:
         """Called when numbers is updated."""
         self.query_one("#numbers", Digits).update(value)
@@ -159,6 +148,31 @@ class Calculator(TermDApp):
         """Called when show_ac changes."""
         self.query_one("#c").display = not show_ac
         self.query_one("#ac").display = show_ac
+
+    def compose(self) -> ComposeResult:
+        """Add our buttons."""
+        with Container(id="calculator"):
+            yield Digits(id="numbers")
+            yield Button("AC", id="ac", variant="primary")
+            yield Button("C", id="c", variant="primary")
+            yield Button("+/-", id="plus-minus", variant="primary")
+            yield Button("%", id="percent", variant="primary")
+            yield Button("÷", id="divide", variant="warning")
+            yield Button("7", id="number-7", classes="number")
+            yield Button("8", id="number-8", classes="number")
+            yield Button("9", id="number-9", classes="number")
+            yield Button("x", id="multiply", variant="warning")
+            yield Button("4", id="number-4", classes="number")
+            yield Button("5", id="number-5", classes="number")
+            yield Button("6", id="number-6", classes="number")
+            yield Button("-", id="minus", variant="warning")
+            yield Button("1", id="number-1", classes="number")
+            yield Button("2", id="number-2", classes="number")
+            yield Button("3", id="number-3", classes="number")
+            yield Button("+", id="plus", variant="warning")
+            yield Button("0", id="number-0", classes="number")
+            yield Button(".", id="point")
+            yield Button("=", id="equals", variant="warning")
 
     def on_key(self, event: events.Key) -> None:
         """Called when the user presses a key."""
@@ -248,15 +262,3 @@ class Calculator(TermDApp):
         if self.value:
             self.right = Decimal(self.value)
         self._do_math()
-
-
-##############
-# ~ Loader ~ #
-##############
-# ? This function is used by the app loader to load the app.
-# It must return the class definition of the app, not an instance.
-# (That is what Type[TermDApp] means in the return type hint.)
-
-
-def loader() -> Type[TermDApp]:
-    return Calculator

@@ -2,22 +2,16 @@
 
 ## Installation
 
-with UV:
-
-```sh
-uv tool install term-desktop
-```
-
-with PipX:
-
-```sh
-pipx install term-desktop
-```
+Install [Just](https://github.com/casey/just) to use the justfile.
+Clone this repo
+`uv sync` (or `just install`)
+`uv run term-desktop` (or `just run`)
 
 ## Documentation
 
 Doesn't exist yet.
 
-## Questions, issues, suggestions?
+## Questions, suggestions?
 
-Please message me in the Textual discord server: @Edward_Jazzhands
+Please post questions or ideas in TTY Group Discussions:
+https://github.com/orgs/ttygroup/discussions

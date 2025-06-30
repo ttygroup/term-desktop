@@ -7,8 +7,8 @@ from pathlib import Path
 import os
 import datetime
 
-# if TYPE_CHECKING:
-    # from textual.visual import VisualType
+if TYPE_CHECKING:
+    from term_desktop.main import MainScreen
 
 from textual.widgets.directory_tree import DirEntry
 
@@ -47,10 +47,13 @@ class ExplorerPathBar(SlideContainer):
         yield path_input
 
     def update_path(self, path: Path) -> None:
+        jump_clicker: type[MainScreen]  # .node_highlighted()  # noqa: F842 # type: ignore
+
         path_input = self.query_one(Input)
         path_input.value = str(path)
 
     def shift_ui_for_taskbar(self, dock: str) -> None:
+        jump_clicker: type[MainScreen]  # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
 
         if dock == "top":
             self.styles.height = 1
@@ -75,20 +78,18 @@ class ExplorerResizeBar(Static):
         # App.mouse_captured refers to the widget that is currently capturing mouse events.
         if self.app.mouse_captured == self:
 
-            total_delta = event.screen_offset - self.position_on_down
-            new_size = self.size_on_down + total_delta
-
-            self.explorer.styles.width = clamp(new_size.width, self.min_width, self.max_width)
-
-            # * Explanation:
             # Get the absolute position of the mouse right now (event.screen_offset),
             # minus where it was when the mouse was pressed down (position_on_down).
-            # That gives the total delta from the original position.
-            # Note that this is not the same as the event.delta attribute,
-            # that only gives you the delta from the last mouse move event.
-            # But we need the total delta from the original position.
-            # Once we have that, add the total delta to size of the explorer.
-            # If total_delta is negative, the size will be smaller
+            # This gives the total delta from the original position.
+            # (Note that this is not the same as the event.delta attribute,
+            # that only gives you the delta from the last mouse move event.)
+            total_delta = event.screen_offset - self.position_on_down
+
+            # Once we have that, add the total delta to size of the explorer on mouse down:
+            new_size = self.size_on_down + total_delta
+
+            # negative values decrease size, positive values increase it
+            self.explorer.styles.width = clamp(new_size.width, self.min_width, self.max_width)
 
     def on_mouse_down(self, event: events.MouseDown) -> None:
 
@@ -119,6 +120,7 @@ class InfoItem(Horizontal):
         yield Static(id="value")
 
     def update(self, value: str) -> None:
+        jump_clicker: type[ExplorerInfo]  # .update_info()  # noqa: F842 # type: ignore
 
         value_widget = self.query_one("#value", Static)
         value_widget.update(value)
@@ -143,6 +145,8 @@ class ExplorerInfo(Container):
 
     @work(group="update_info", exclusive=True, exit_on_error=False)
     async def update_info(self, info_dict: dict[str, str]) -> None:
+        jump_clicker: type[FileExplorer]  # noqa: F842 # type: ignore
+        # ? called by the methods: [node_selected, node_highlighted, action_scan_directory]
 
         if info_dict["type"] == "Directory":
             self.query_one("#file_count", InfoItem).display = True
@@ -158,6 +162,10 @@ class ExplorerInfo(Container):
 
 
 class CustomDirectoryTree(DirectoryTree):
+
+    def __init__(self, path: str | Path = "/", **kwargs: Any) -> None:
+        super().__init__(path, **kwargs)
+        self.visible = False
 
     async def _on_click(self, event: events.Click):
         if event.chain == 1:
@@ -193,7 +201,7 @@ class FileExplorer(SlideContainer):
             with Vertical():
                 yield Static("[$primary]File Explorer", classes="explorer_top")
                 yield Static("[italic]Double-click: expand/run", classes="explorer_top")
-                yield CustomDirectoryTree("/home/")
+                yield CustomDirectoryTree("/")
                 yield ExplorerInfo(self)
                 scan_button = Button("Scan Directory (ctrl+s)", id="scan_directory")
                 scan_button.compact = True
@@ -207,6 +215,15 @@ class FileExplorer(SlideContainer):
     # UI / Focus stuff #
     ####################
 
+    #! OVERRIDE
+    def toggle(self) -> None:
+        "Toggle the state of the container. Opens or closes the container."
+        if not self.state:
+            self.query_one(CustomDirectoryTree).visible = True
+            self.state = True
+        else:
+            self.state = False
+
     def on_focus(self) -> None:
         dir_tree = self.query_one(DirectoryTree)
         dir_tree.focus()
@@ -216,8 +233,11 @@ class FileExplorer(SlideContainer):
 
         if event.state:
             self.query_one(DirectoryTree).focus()
+        else:
+            self.query_one(CustomDirectoryTree).visible = False
 
     def shift_ui_for_taskbar(self, dock: str) -> None:
+        jump_clicker: type[MainScreen]  # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
 
         vertical = self.query_one(Vertical)
         if dock == "top":
@@ -302,7 +322,7 @@ class FileExplorer(SlideContainer):
         # self.query_one("#scan_directory", Button).disabled = False  # disable button while scanning
         # self.query_one("#scan_directory", Button).label = "Scan Directory (ctrl+s)"
         self.query_one("#scan_spinner", SpinnerWidget).pause(hide=True)
-        self.query_one("#scan_directory", Button).display = True        
+        self.query_one("#scan_directory", Button).display = True
 
         # check node we just did work on is still highlighted
         if self.highlighted_node != current_highlighted_node:

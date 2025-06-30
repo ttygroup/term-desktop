@@ -4,6 +4,18 @@
     width: 1fr; height: 1fr;
     align: center middle;
     background: transparent;
+    & > CustomCanvas {
+        # border: solid yellow;
+        align: center middle;
+        layout: horizontal;
+        & > FigletWidget {
+            background: transparent;
+            margin: 0 2;
+        }         
+    }
+    & > Coloromatic {
+        width: 1fr; height: 1fr;       
+    }
 }
 
 TaskBarButton { 
@@ -90,7 +102,7 @@ ExplorerPathBar {
     padding: 0 1;
     align: center top;
     dock: bottom;
-    # & > Input { width: 1fr; }
+    & > Input { background: $surface; }
 }
 
 AppChooser { 

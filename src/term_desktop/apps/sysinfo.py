@@ -4,84 +4,94 @@ sysinfo.py
 
 # Python imports
 from __future__ import annotations
-from typing import Any, Type
+
+# from typing import Any, Type
 import os
 import sys
 import platform
 
 # Textual imports
-from textual import on
-
-# from textual.content import Content
 from textual.widgets import Static
-from textual.binding import Binding
-import textual.events as events
 
-# from rich.text import Text
+# Unused Textual imports (for reference):
+# from textual import events, on
+# from textual.message import Message
+# from textual.binding import Binding
 
 # Textual library imports
-# Would go here if you have any
+from textual_window.window import WindowStylesDict
 
 # Local imports
-from term_desktop.appbase import TermDApp
+from term_desktop.app_sdk import (
+    TDEApp,
+    TDEMainWidget,
+    LaunchMode,
+    CustomWindowSettings,
+)
 
 
-class SysInfo(TermDApp):
+class SysInfo(TDEApp):
 
-    APP_NAME = "SysInfo"
+    APP_NAME = "System Information"
     APP_ID = "sysinfo"
+    ICON = "🛈"
+    DESCRIPTION = "View static system info such as OS, CPU, UID/GID, etc."
+
+    def launch_mode(self) -> LaunchMode:
+        """Returns the launch mode for the app. \n
+
+        Must return one of the `LaunchMode` enum values.
+        """
+        return LaunchMode.WINDOW  # or FULLSCREEN, or DAEMON
+
+    def get_main_content(self) -> type[TDEMainWidget] | None:
+        """Returns the class definiton for the main content widget for the app. \n
+        Must return a definition of a Widget subclass, not an instance of it.
+
+        If the TDEapp is a normal app (runs in a window or full screen), this must return
+        the main content Widget for your app. If the TDEapp is a daemon, this method must
+        return None.
+        """
+        return SysInfoWidget
+
+    def custom_window_settings(self) -> CustomWindowSettings:
+        """Returns the settings for the window to be created. \n
+
+        This is not part of the contract and not necessary to implement.
+        This method can be optionally implemented to provide custom window settings.
+        """
+        return {
+            # This returns an empty dictionary when not overridden.
+            # see CustomWindowSettings for more options
+        }
+
+    def window_styles(self) -> WindowStylesDict:
+
+        return {
+            "width": 45,  #
+            "height": 25,  #
+            # "max_width": None,  #  default is 'size of the parent container'
+            # "max_height": None,  # default is 'size of the parent container'
+            # "min_width": 12,  #
+            # "min_height": 6,  #
+        }
+
+
+class SysInfoWidget(TDEMainWidget):
 
     DEFAULT_CSS = """
-    SysInfo {
-        width: 45;
-        height: 26;
-        & > #content_pane { 
-            padding: 0 0 0 1;
-            overflow-x: auto;            
-            & > #title { border: solid $primary; }
-            & > #content { width: auto; height: auto; }
-        }  
-    }    
+    #title { border: solid $primary; }
+    #content { width: auto; height: auto; }         
     """
-    BINDINGS = [
-        Binding("ctrl+w", "close_window", "Close Window", priority=True),
-        Binding("ctrl+d", "minimize_window", "Minimize Window", priority=True),
-        # You can remove the above bindings if you dont want them.
-        # Note that `close_window` and `minimize_window` are already defined in the base
-        # Textual-Window library, but the base class does not have priority set to True.
-        # Priority will make close and minimize shortcuts work even when you have focus
-        # on children inside of the window, like TextArea or Input widgets.
-        # Add any additional bindings you need here.
-    ]
-
-    def __init__(self, id: str, **kwargs: Any):
-        super().__init__(  #! Note you cant set id here. It must be set using APP_ID above.
-            id=id,  # it must be taken as an argument and passed to super().__init__.
-            start_open=True,  # The app sets the window IDs and manages them.
-            allow_maximize=True,
-            starting_horizontal="centerright",
-            starting_vertical="middle",
-            # Customize window settings here
-            **kwargs,
-        )
-        self.static_system_info = self.get_static_system_info()
 
     def compose(self):
 
+        self.static_system_info = self.get_static_system_info()
         yield Static("System Information", id="title")
         yield Static(
             "\n".join(f"{key}: {value}" for key, value in self.static_system_info.items()),
             id="content",
         )
-
-    @on(events.Focus)
-    def on_mount(self) -> None:
-        # Here you can set which widgets inside the window you would like to gain focus
-        # when the window is focused or first opened.
-        content = self.query_one("#content", Static)
-        content_pane = self.query_one("#content_pane")
-        index = content_pane.children.index(content)
-        self.log(f"Focused widget: {content} at index {index}")
 
     def get_static_system_info(self) -> dict[str, str]:
         uname = platform.uname()
@@ -138,20 +148,3 @@ class SysInfo(TermDApp):
 
         # Fallback
         return platform.processor() or "Unknown"
-
-
-##############
-# ~ Loader ~ #
-##############
-# ? This function is used by the app loader to load the app.
-# It must return the class definition of the app, not an instance.
-# (That is what Type[TermDApp] means in the return type hint.)
-
-# Note that it's very important to the architecture of the app that this
-# loader returns a class definition and not an instance.
-# We don't want every app to be booted up along with the desktop environment!
-# Term-Desktop only initializes the class on demand when it needs to.
-
-
-def loader() -> Type[TermDApp]:
-    return SysInfo  #! Replace SysInfo with your app class name.

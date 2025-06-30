@@ -20,7 +20,7 @@ from textual_window import WindowBar
 from term_desktop.common import NoSelectStatic
 
 # from term_desktop.core import StartMenuContainer as StartMenu
-from term_desktop.messages import ToggleStartMenu, ToggleExplorer
+from term_desktop.common.messages import ToggleStartMenu, ToggleExplorer
 
 
 class TaskBarButton(NoSelectStatic):
