@@ -13,9 +13,9 @@ from __future__ import annotations
 
 # Textual imports
 from textual.widgets import Static
+from textual import events, on
 
 # Unused Textual imports (for reference):
-from textual import events, on
 # from textual.message import Message
 # from textual.binding import Binding
 
@@ -153,10 +153,10 @@ class Template(TDEApp):
 
         # This returns an empty dictionary when not overridden.
         return {
-            #     "width": 25,  #
-            #     "height": 12,  #
-            #     "max_width": None,  #  default is 'size of the parent container'
-            #     "max_height": None,  # default is 'size of the parent container'
-            #     "min_width": 12,  #
-            #     "min_height": 6,  #
+            # "width": 25,  #
+            # "height": 12,  #
+            # "max_width": None,  #  default is 'size of the parent container'
+            # "max_height": None,  # default is 'size of the parent container'
+            # "min_width": 12,  #
+            # "min_height": 6,  #
         }
