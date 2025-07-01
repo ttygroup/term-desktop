@@ -23,14 +23,14 @@ from textual_window.window import WindowStylesDict
 
 # Local imports
 from term_desktop.app_sdk import (
-    TDEApp,
+    TDEAppBase,
     TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
 )
 
 
-class SysInfo(TDEApp):
+class SysInfo(TDEAppBase):
 
     APP_NAME = "System Information"
     APP_ID = "sysinfo"

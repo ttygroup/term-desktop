@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     # from term_desktop.main import TermDesktop
     from term_desktop.screens import MainScreen
-    from term_desktop.app_sdk.appbase import TDEApp
+    from term_desktop.app_sdk.appbase import TDEAppBase
 
 
 # Textual imports
@@ -23,7 +23,7 @@ from textual.widgets.option_list import Option
 from textual_slidecontainer import SlideContainer
 
 # Local imports
-from term_desktop.services import ServicesWidget
+from term_desktop.services import ServicesManager
 
 
 class StartMenu(SlideContainer):
@@ -38,7 +38,7 @@ class StartMenu(SlideContainer):
             duration=0.4,
         )
 
-        self.registered_apps: dict[str, type[TDEApp]] = {}
+        self.registered_apps: dict[str, type[TDEAppBase]] = {}
         self.taskbar_offset = Offset(0, -1)
 
     def compose(self) -> ComposeResult:
@@ -47,11 +47,11 @@ class StartMenu(SlideContainer):
         yield option_list
 
     def on_mount(self) -> None:
-        services = self.app.query_one(ServicesWidget).services
+        services = self.app.query_one(ServicesManager)
         self.registered_apps = services.app_loader.registered_apps
         self.load_registered_apps(self.registered_apps)
 
-    def load_registered_apps(self, registered_apps: dict[str, type[TDEApp]]) -> None:
+    def load_registered_apps(self, registered_apps: dict[str, type[TDEAppBase]]) -> None:
         self.log.debug("Loading registered apps into start menu.")
 
         options = [Option(f"{value.APP_NAME}\n", key) for key, value in registered_apps.items()]
@@ -68,11 +68,11 @@ class StartMenu(SlideContainer):
             tde_app_type = self.registered_apps.get(event.option_id)
             if tde_app_type:
                 self.log.debug(f"Launching app: {tde_app_type.APP_NAME} ({event.option_id})")
-                services = self.app.query_one(ServicesWidget).services
+                services = self.app.query_one(ServicesManager)
 
                 # This will get made into a sync method with a worker in the future
                 # so that this calling method does not need to await this call.
-                await services.process_manager.request_process_launch(tde_app_type)
+                await services.app_service.request_process_launch(tde_app_type)
             self.close()
 
     @on(SlideContainer.SlideCompleted)

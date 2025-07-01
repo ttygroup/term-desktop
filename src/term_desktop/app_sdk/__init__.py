@@ -5,7 +5,7 @@
 from textual_window.window import WindowStylesDict
 
 from term_desktop.app_sdk.appbase import (
-    TDEApp,
+    TDEAppBase,
     TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
@@ -14,7 +14,7 @@ from term_desktop.app_sdk.appbase import (
 )
 
 __all__ = [
-    "TDEApp",
+    "TDEAppBase",
     "TDEMainWidget",
     "LaunchMode",
     "CustomWindowSettings",

@@ -1,27 +1,24 @@
-"process_manager.py - The process manager for handling processes in TDE."
+"processes.py - The process service for handling processes in TDE."
 
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
     from term_desktop.app_sdk.appbase import (
-        TDEApp,
-        AppContext,
+        TDEAppBase,
         DefaultWindowSettings,
         TDEMainWidget,
     )
 
-# Textual imports
-from textual import log
-
 # Local imports
-from term_desktop.services.servicebase import BaseService
+from term_desktop.services.servicebase import TDEServiceBase
 from term_desktop.app_sdk import LaunchMode
+from term_desktop.aceofbase import ProcessContext, ProcessType
 
 
-
-class ProcessManager(BaseService):
+class AppService(TDEServiceBase):
 
     #####################
     # ~ Initialzation ~ #
@@ -40,13 +37,18 @@ class ProcessManager(BaseService):
         super().__init__(services_manager)
 
         #! Make these reactive dicts
-        self._processes: dict[str, TDEApp] = {}
+        self._processes: dict[str, TDEAppBase] = {}
         self._instance_counter: dict[str, set[int]] = {}
         self._content_instance_dict: dict[str, TDEMainWidget] = {}
 
         # NOTE: Storing all the content instances and custom mounts in dictionaries
         # will make it easier for the process manager to do stuff like restart processes
         # on its own in the future. Right now it is just scaffolding.
+
+    ################
+    # ~ Messages ~ #
+    ################
+    # None yet
 
     ####################
     # ~ External API ~ #
@@ -55,7 +57,7 @@ class ProcessManager(BaseService):
     # accessed by anything else in TDE, including other services.
 
     @property
-    def processes(self) -> dict[str, TDEApp]:
+    def processes(self) -> dict[str, TDEAppBase]:
         """Get the currently running processes."""
         return self._processes
 
@@ -70,41 +72,42 @@ class ProcessManager(BaseService):
         return self._content_instance_dict
 
     async def start(self) -> bool:
-        log("Starting ProcessManager service")
+        self.log("Starting ProcessManager service")
         # Nothing to do here yet.
         return True
 
     async def stop(self) -> bool:
-        log("Stopping ProcessManager service")
+        self.log("Stopping ProcessManager service")
         self._processes.clear()
         self._instance_counter.clear()
         return True
 
     async def request_process_launch(
         self,
-        TDE_App: type[TDEApp],
+        TDE_App: type[TDEAppBase],
     ) -> None:
         """
         Request the process manager to launch a new process for the given TDEApp.
 
         Args:
-            TDE_App (type[TDEApp]): The app class to launch.
+            TDE_App (type[TDEAppBase]): The app class to launch.
         """
-        log(f"Requesting process launch for app: {TDE_App.APP_NAME}")
+        self.log(f"Requesting process launch for app: {TDE_App.APP_NAME}")
 
         # Launch the process asynchronously
         # TODO: this should be sync function + worker call
         await self._launch_process(TDE_App)
 
-    def get_process_by_id(self, process_id: str) -> TDEApp:
+    def get_process_by_id(self, process_id: str) -> TDEAppBase:
         """
         Get a process by its ID.
 
         Args:
             process_id (str): The ID of the process to retrieve.
-
         Returns:
-            TDEApp: The app instance associated with the given process ID.
+            TDEAppBase: The app instance associated with the given process ID.
+        Raises:
+            KeyError: If the process with the given ID does not exist.
         """
         if process_id not in self._processes:
             raise KeyError(f"Process with ID {process_id} does not exist.")
@@ -113,17 +116,25 @@ class ProcessManager(BaseService):
     ################
     # ~ Internal ~ #
     ################
-    # This section is for methods that are only used internally 
+    # This section is for methods that are only used internally
     # These should be marked with a leading underscore.
 
-    def _add_process_to_dict(self, tde_app_instance: TDEApp, process_id: str) -> None:
-        """Add a process to the manager."""
+    def _add_process_to_dict(self, tde_app_instance: TDEAppBase, process_id: str) -> None:
+        """
+        Add a process to the app service's process dictionary.
+
+        Args:
+            tde_app_instance (TDEAppBase): The app instance to add.
+            process_id (str): The ID of the app process.
+        Raises:
+            RuntimeError: If a process with the given ID already exists.
+        """
 
         if process_id in self._processes:
             raise RuntimeError(f"Process with ID {process_id} already exists.")
 
         self._processes[process_id] = tde_app_instance
-        log(f"Process {tde_app_instance.APP_NAME} with ID {process_id} added.")
+        self.log(f"Process {tde_app_instance.APP_NAME} with ID {process_id} added.")
 
     def _set_available_process_id(self, APP_ID: str) -> str:
 
@@ -142,45 +153,61 @@ class ProcessManager(BaseService):
         else:
             return f"{APP_ID}_{i}"
 
-    #! TODO: make this a worker once we have the MetaABC set up
-    async def _launch_process(self, TDE_App: type[TDEApp]) -> None:
+    async def _launch_process(self, TDE_App: type[TDEAppBase]) -> None:
         """
         Args:
-            TDEapp (TDEApp): The app to launch.
+            TDE_App (TDEAppBase): The app to launch.
+            Note that this is a class definition, not an instance.
+        Raises:
+            TypeError: If TDE_App is not a subclass of TDEAppBase.
+            AssertionError: If the TDE_App is not valid (should never happen)
+        Raises:
+            RuntimeError: If a process with the given ID already exists.
         """
-        log(f"Launching process for app: {TDE_App.APP_NAME}")
+        self.log(f"Launching process for app: {TDE_App.APP_NAME}")
 
-        assert TDE_App.APP_NAME is not None  # this is already validated by this point
+        assert issubclass(TDE_App, TDEAppBase)
+        assert TDE_App.APP_NAME is not None
         assert TDE_App.APP_ID is not None
 
-        # Get the app ID with a number if needed
+        # Get the app process ID with a number if needed.
         # This is to handle multiple instances of the same app.
+        # Note that this is a simple identifier just for the App Process Service.
+        # There is also a UID that is set on all types of processes in TDE.
         process_id = self._set_available_process_id(TDE_App.APP_ID)
 
         # * Create the app process instance
-        # This is the instance of the base app inherited from the TDEApp class. Right now
+        # This is the instance of the base app inherited from the TDEAppBase class. Right now
         # it just holds all the app metadata. Store this in the process manager.
-        app_process = TDE_App(id=process_id)
-        self._add_process_to_dict(app_process, process_id)
+        app_process = TDE_App(process_id=process_id)
+        try:
+            self._add_process_to_dict(app_process, process_id)
+        except RuntimeError as e:
+            self.log.error(f"Failed to add process {process_id}: {e}")
+            raise RuntimeError(
+                f"Failed to add process {process_id} for app {TDE_App.APP_NAME}. "
+                "This might be due to a duplicate process ID."
+            ) from e
 
-        app_context: AppContext = {
+        app_context: ProcessContext = {
+            "process_type": ProcessType.APP,
             "process_id": process_id,
+            "process_uid": app_process.uid,
             "services": self.services_manager,
         }
 
-        # The rest is pretty self explanatory.
         launch_mode = app_process.launch_mode()
         if launch_mode == LaunchMode.WINDOW:
 
             main_content = app_process.get_main_content()
             if main_content is None:
-                log.error("The main_content property must return a Widget if your app is not a Daemon")
+                self.log.error("The main_content property must return a Widget if your app is not a Daemon")
                 #! Create error popup for user here
                 return
             try:
                 content_instance = main_content(app_context)
             except Exception as e:
-                log.error(f"Failed to create main content instance for {app_process.APP_NAME}: {e}")
+                self.log.error(f"Failed to create main content instance for {app_process.APP_NAME}: {e}")
                 #! Create error popup for user here
                 return
 
@@ -216,6 +243,6 @@ class ProcessManager(BaseService):
             pass
 
         else:
-            log.error(f"Unknown launch mode {launch_mode} for app {app_process.APP_NAME}")
+            self.log.error(f"Unknown launch mode {launch_mode} for app {app_process.APP_NAME}")
             #! Create error popup for user here
             return

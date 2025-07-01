@@ -23,24 +23,27 @@ from textual_slidecontainer import SlideContainer
 #################
 # Local imports #
 #################
-# from term_desktop.app_sdk.appbase import TDEApp
 from term_desktop.services import ServicesWidget
 from term_desktop.common import (
     DummyScreen,
-)
-from term_desktop.core import (
-    StartMenu,
-    TaskBar,
-    Desktop,
-    FileExplorer,
-    ExplorerPathBar,
-    AppChooser,
 )
 from term_desktop.common.messages import (
     ToggleStartMenu,
     ToggleExplorer,
     ToggleTaskBar,
     ToggleWindowSwitcher,
+)
+
+# from term_desktop.shell.shellbase import ShellBase
+from term_desktop.shell.desktop import Desktop
+
+# TODO: Shell theme Plugin system here
+from term_desktop.shell.ranger_theme import (
+    StartMenu,
+    AppChooser,
+    TaskBar,
+    FileExplorer,
+    ExplorerPathBar,
 )
 
 

@@ -15,7 +15,6 @@ from textual.containers import Horizontal, Container
 from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.geometry import Offset
-from textual.binding import Binding
 
 # Unused Textual imports (for reference):
 # from textual.css.query import NoMatches
@@ -26,7 +25,7 @@ from textual_window.window import WindowStylesDict
 
 # Local imports
 from term_desktop.app_sdk import (
-    TDEApp,
+    TDEAppBase,
     TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
@@ -34,7 +33,7 @@ from term_desktop.app_sdk import (
 )
 
 
-class Notepad(TDEApp):
+class Notepad(TDEAppBase):
 
     APP_NAME = "Notepad"
     APP_ID = "notepad"

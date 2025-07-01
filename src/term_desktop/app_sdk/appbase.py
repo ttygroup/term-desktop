@@ -3,22 +3,19 @@
 # Python imports
 from __future__ import annotations
 from typing import TypedDict, Any, Callable, TYPE_CHECKING
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import Enum
+
 if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
-    from textual_window.window import (
-        Window,
-        STARTING_HORIZONTAL,
-        STARTING_VERTICAL,
-        MODE,
-        WindowStylesDict
-    )    
+    from textual_window.window import Window, STARTING_HORIZONTAL, STARTING_VERTICAL, MODE, WindowStylesDict
 
 # Textual imports
 from textual.message import Message
 from textual.widget import Widget
 
+# Local imports
+from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
 
 
 class LaunchMode(Enum):
@@ -70,19 +67,7 @@ class CustomWindowMounts(TypedDict, total=False):
     below_bottombar: type[Widget]  #   mounted below the bottom bar
 
 
-class AppContext(TypedDict, total=True):
-    """Context for the app, passed to the main content widget. \n
-
-    This is used to provide access to the services manager and other context-specific
-    information that the app might need.
-    """
-
-    process_id: str  # The ID of the process running the app.
-    services: ServicesManager  # The services manager instance
-    # Add more context-specific fields as needed.
-
-
-class TDEApp(ABC):
+class TDEAppBase(AceOfBase):
 
     ################
     # ~ CONTRACT ~ #
@@ -189,7 +174,7 @@ class TDEApp(ABC):
     class AppStarted(Message):
         """Posted when an app is either started or restarted."""
 
-        def __init__(self, app: TDEApp):
+        def __init__(self, app: TDEAppBase):
             super().__init__()
             self.app = app
 
@@ -200,17 +185,20 @@ class TDEApp(ABC):
     BROKEN: bool = False  # Indicates if the app is broken and cannot be launched.
     MISSING_METHODS: frozenset[str] | None = None  # Set of missing abstract methods, if any.
 
-    async def kill(self) -> None:
-        # N/I yet
-        pass
-
-    def __init__(self, id: str) -> None:
-        """The ID is set by the process manager when it initializes the app process.
+    def __init__(self, process_id: str) -> None:
+        """The ID is set by the process service when it initializes the app process.
         It will append a number to keep track of multiple instances of the same app.
 
         Note that this is not the same as window number - A single app process instance
-        can still hypothetically have multiple windows managed by it."""
-        self.id = id
+        can still hypothetically have multiple windows managed by it.
+        It is also not the same as the UID. The UID is a unique identifier
+        that is set on all types of processes automatically (anything that inherits from
+        a TDE Base class)."""
+        self.process_id = process_id
+
+    async def kill(self) -> None:
+        # N/I yet
+        pass
 
     @classmethod
     def validate(cls) -> None:
@@ -229,6 +217,7 @@ class TDEApp(ABC):
         but with a warning that it cannot be launched. We can then easily expand that
         to add more information that the user could click on to see what is missing.
         """
+        super().validate()
 
         required_members = {
             "APP_NAME": "class attribute",
@@ -245,16 +234,6 @@ class TDEApp(ABC):
             else:
                 if attr is None:
                     raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
-
-        missing = cls.__abstractmethods__
-        if missing:
-            cls.BROKEN = True
-            cls.MISSING_METHODS = missing
-            raise NotImplementedError(
-                f"{cls.__name__} is missing the following abstract methods: \n"
-                f"{', '.join(missing)}\n"
-                "Please implement them to make the app functional."
-            )
 
     @property
     def default_window_settings(cls) -> DefaultWindowSettings:
@@ -301,18 +280,26 @@ class TDEMainWidget(Widget):
             super().__init__()
             self.window = window
 
-    def __init__(self, app_context: AppContext, **kwargs: Any):
+    def __init__(self, process_context: ProcessContext, **kwargs: Any):
         super().__init__(**kwargs)
-        self._app_context = app_context
+        self._process_context = process_context
+
+    @property
+    def process_type(self) -> ProcessType:
+        return self._process_context["process_type"]
 
     @property
     def process_id(self) -> str:
-        return self._app_context["process_id"]
+        return self._process_context["process_id"]
+
+    @property
+    def process_uid(self) -> str:
+        return self._process_context["process_uid"]
 
     @property
     def services(self) -> ServicesManager:
-        return self._app_context["services"]
-    
+        return self._process_context["services"]
+
     def post_initialized(self, window: Window) -> None:
         """This method is called by the WindowService when the window is mounted.
         It is used to post the Initialized message to the app's main content widget.

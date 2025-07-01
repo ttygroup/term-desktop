@@ -8,28 +8,29 @@ if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
 
 # Textual imports
-# from textual import log   #? <- use this for logging to Textual dev console
-from term_desktop.services.servicebase import BaseService
+from term_desktop.services.servicebase import TDEServiceBase
 
 # Textual library imports
 
 # Local imports
 
 
-class ServiceTemplate(BaseService):
+class ServiceTemplate(TDEServiceBase):
 
     #####################
     # ~ Initialzation ~ #
     #####################
 
-    def __init__(
-        self,
-        services_manager: ServicesManager,
-    ) -> None:
+    def __init__(self, services_manager: ServicesManager) -> None:
         """
         Initialize the [INSERT SERVICE NAME HERE]
         """
         super().__init__(services_manager)
+
+    ################
+    # ~ Messages ~ #
+    ################
+    # None yet
 
     ####################
     # ~ External API ~ #
@@ -42,10 +43,10 @@ class ServiceTemplate(BaseService):
 
         # Example of using a worker inside of a service
         # Any extra positional and keyword arguments that not part of the
-        # run_worker function will be passed to the callback function.   
+        # run_worker function will be passed to the callback function.
         # Note this is set to use thread workers by default, and so the
-        # callback function should NOT be async.  
-        #    
+        # callback function should NOT be async.
+        #
         # worker = self.run_worker(
         #     self._func_to_run,
         #     any_args_here,
@@ -72,5 +73,5 @@ class ServiceTemplate(BaseService):
     ################
     # ~ Internal ~ #
     ################
-    # This section is for methods that are only used internally 
-    # These should be marked with a leading underscore.           
+    # This section is for methods that are only used internally
+    # These should be marked with a leading underscore.
