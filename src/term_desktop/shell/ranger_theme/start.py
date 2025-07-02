@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # from term_desktop.main import TermDesktop
-    from term_desktop.screens import MainScreen
+    from term_desktop.screen import MainScreen
     from term_desktop.app_sdk.appbase import TDEAppBase
 
 

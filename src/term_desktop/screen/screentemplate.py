@@ -1,5 +1,28 @@
-from textual.widget import Widget
+"term-desktop"
 
+# python standard library imports
+from __future__ import annotations
+from typing import TYPE_CHECKING  # , cast
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+    from textual.widgets.directory_tree import DirEntry
+
+# # Textual imports
+# from textual import on, events  # , work
+# from textual.widgets import (
+#     DirectoryTree,
+# )
+# from textual.binding import Binding
+# from textual.screen import Screen
+
+# # Textual library imports
+# from textual_window import Window, WindowSwitcher
+# from textual_slidecontainer import SlideContainer
+
+# Local imports
+from term_desktop.screen.screenbase import ScreenBase
+from term_desktop.core.shell import Shell
 
 class ShellSession(AceOfBase):
 

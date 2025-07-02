@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING  # , cast  # , Type #, Any
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
-    from term_desktop.screens.screenbase import TDEScreen
+    from term_desktop.screen.screenbase import TDEScreen
 
 # Textual imports
 from textual import on

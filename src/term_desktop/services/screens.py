@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable, Awaitable
 
 if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
-    from term_desktop.screens import TDEScreen
+    from term_desktop.screen import TDEScreen
     from term_desktop.aceofbase import ProcessContext, ProcessType
 
 # Textual imports
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
-from term_desktop.screens import MainScreen, TDEScreenBase, TDEScreen
+from term_desktop.screen import MainScreen, TDEScreenBase, TDEScreen
 
 
 class ScreenService(TDEServiceBase):

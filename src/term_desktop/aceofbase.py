@@ -17,6 +17,7 @@ class ProcessType(enum.Enum):
     SERVICE = "service"
     SCREEN = "screen"
     SHELL = "shell"
+    WINDOW = "window"
     # Add more process types as needed.
 
 class ProcessContext(TypedDict, total=True):
@@ -42,11 +43,12 @@ class AceOfBase(ABC):
     in the app must inherit from.
 
     Everything in the app that inherits from a base class represents a "process"
-    of some kind. At the moment the four types of bases are:
+    of some kind. At the moment the five types of bases are:
     - App base
     - Service base
     - Screen base
     - Shell base
+    - Window base
 
     In the future this might be expanded to include more bases. By having them all
     inherit from a single ABC, we can more easily centralize things that all TDE
@@ -85,6 +87,12 @@ class AceOfBase(ABC):
         Make sure you call `super().validate()` if you override this
         method in a subclass."""
 
+        # EXPLANATION: All implemented abstract methods are removed out of 
+        # cls.__abstractmethods__ when the class is instantiated. If there are any left,
+        # it means the class is not fully implemented and should not be instantiated.
+        # Normally an ABC only checks for this when you try to instantiate it,
+        # but we want to check it at the class level to ensure that all subclasses
+        # implement their required methods before we even try to create them.
         missing = cls.__abstractmethods__
         if missing:
             cls.BROKEN = True

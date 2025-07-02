@@ -1,17 +1,4 @@
-"""basetemplate.py
-
-Currently there are five base types in TDE:
-- AppBase
-- ServiceBase
-- ScreenBase
-- ShellBase
-- WindowBase
-
-Everything that inherits from a base is considered a "process" and thus is given
-a UID and can be managed/logged in a central location.
-
-In the future we may want to add more types. This template will help
-to streamline the creation of new base classes."""
+"""windowbase.py"""
 
 from __future__ import annotations
 from abc import abstractmethod
@@ -21,23 +8,23 @@ if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
 
 # Textual imports
-from textual.widget import Widget
-from textual.message import Message
+# from textual.message import Message
+
+# Textual library imports
+from textual_window import Window
 
 # Local imports
 from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
 
 
-class FooBase(AceOfBase):
+class WindowBase(AceOfBase):
 
     ################
     # ~ CONTRACT ~ #
     ################
 
-    FOO_ID: str | None = None
-
     def __init__(self, process_id: str) -> None:
-        """The ID is set by the Foo service when it initializes the Foo process.
+        """The ID is set by the Window service when it initializes the Window process.
 
         Note that this is not the same as the UID. The UID is a unique identifier
         that is set on all types of processes automatically (anything that inherits from
@@ -45,9 +32,9 @@ class FooBase(AceOfBase):
         self.process_id = process_id
 
     @abstractmethod
-    def get_foo(self) -> type[TDEWidgetFoo]:  # returning the definition, not an instance
+    def get_window(self) -> type[TDEWindow]:
         """
-        build me
+        # ! add note here
         """
         ...
 
@@ -79,16 +66,13 @@ class FooBase(AceOfBase):
         #             raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
 
 
-class TDEWidgetFoo(Widget):
+class TDEWindow(Window):
     """
-    Base class for all widgets of Foo type in TDE.
+    Base class for all windows in TDE apps.
+
+    Note that you can't import this and use it apps, this is only for
+    direct use by the TDE Window Service.
     """
-
-    class Initialized(Message):
-        """Posted when the TDEWidgetFoo is initialized."""
-
-        # def __init__(self):
-        #     super().__init__()
 
     def __init__(self, process_context: ProcessContext, **kwargs: Any):
         super().__init__(**kwargs)
@@ -110,12 +94,5 @@ class TDEWidgetFoo(Widget):
     def services(self) -> ServicesManager:
         return self._process_context["services"]
 
-    def post_initialized(self) -> None:
-        """This method is called by the FooService when the WidgetFoo is mounted.
-        It is used to post the Initialized message to the WidgetFoo when the service
-        has decided that it is complete.
-
-        This message can be listened to by a WidgetFoo to perform any additional
-        setup after the WidgetFoo is mounted and ready to go. \n
-        """
-        self.post_message(self.Initialized())
+    # NOTE: Windows post an Initialized message automatically,
+    # so there's no need to trigger one here like in the other processes.
