@@ -2,10 +2,12 @@
 
 # python standard library imports
 from __future__ import annotations
-from textual.widget import Widget
+# from typing import cast, Any
 
-from textual import work
+from textual import work, on
 from textual.message import Message
+from textual.worker import Worker
+from textual.widget import Widget
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
@@ -113,3 +115,12 @@ class ServicesManager(Widget):
                 raise RuntimeError("ShellService startup returned False after running.")
 
         self.post_message(self.ServicesStarted())
+
+    @on(Worker.StateChanged)
+    def worker_state_changed(self, event: Worker.StateChanged) -> None:
+        
+        worker = event.worker  # type: ignore ( Textual type hinting issue )
+        self.log(
+            f"Worker {worker} state changed to {event.state}"
+        )
+        self.log(event)

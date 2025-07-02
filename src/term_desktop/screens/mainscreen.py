@@ -1,4 +1,4 @@
-"term-desktop"
+"mainscreen.py"
 
 # python standard library imports
 from __future__ import annotations
@@ -23,6 +23,11 @@ if TYPE_CHECKING:
 # Local imports
 from term_desktop.screens.screenbase import ScreenBase
 from term_desktop.core.shell import Shell
+
+
+#! All that is left to do is build a MainScreen class (And screen template)
+# And this class will be automatically loaded in and mounted to the main
+# app when the app starts.
 
 
 class MainScreen(ScreenBase):

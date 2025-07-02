@@ -54,6 +54,9 @@ class AceOfBase(ABC):
     process in TDE (including services, screens, etc) a unique identifier.
     """
 
+    BROKEN: bool = False  # Indicates if the app is broken and cannot be launched.
+    MISSING_METHODS: frozenset[str] | None = None  # Set of missing abstract methods, if any.
+
     @property
     def uid(self) -> str:
         """Globally unique ID for this entity."""

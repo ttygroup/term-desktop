@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Callable, Awaitable
 if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
     from term_desktop.screens import TDEScreen
+    from term_desktop.aceofbase import ProcessContext, ProcessType
 
 # Textual imports
 # from textual.message import Message
@@ -33,11 +34,9 @@ class ScreenService(TDEServiceBase):
         Initialize the Screen service.
         """
         super().__init__(services_manager)
-        #! Make these reactive dicts?
 
-        self.mounting_callback: Callable[[TDEScreen], Awaitable[None]] | None = None
-        self._screen_processes: dict[str, TDEScreen] = {}
-        self._active_sreens: dict[str, TDEScreenBase] = {}
+        self._screen_instance_dict: dict[str, TDEScreen] = {}
+        self._mounting_callback: Callable[[TDEScreen], Awaitable[None]] | None = None        
 
     ################
     # ~ Messages ~ #
@@ -74,7 +73,18 @@ class ScreenService(TDEServiceBase):
         return True
 
     async def stop(self) -> bool:
+        # nothing here yet
         return True
+
+    def push_main_screen(self) -> None:
+        """Push the main screen onto the screen stack using the registered
+        mounting callback. This takes no arguments, as only 1 screen mounting
+        callback is allowed to be registered at a time.
+
+        This is currently only used by the Uber App Class (TermDesktop) to
+        tell the ScreenService to push the main screen onto the screen stack.
+        """
+        self.request_screen_mount(MainScreen)
 
     def register_mounting_callback(self, callback: Callable[[TDEScreen], Awaitable[None]]) -> None:
         """This is used by the Uber App Class (TermDesktop) to register a
@@ -90,7 +100,7 @@ class ScreenService(TDEServiceBase):
         """
         if not callable(callback):
             raise ValueError(f"Callback {callback} is not callable.")
-        self.mounting_callback = callback
+        self._mounting_callback = callback
 
     def register_dismissing_callback(self, callback: Callable[[TDEScreen], Awaitable[None]]) -> None:
         """This is used by the Uber App Class (TermDesktop) to register a
@@ -107,27 +117,30 @@ class ScreenService(TDEServiceBase):
             raise ValueError(f"Callback {callback} is not callable.")
         self.dismissing_callback = callback
 
-    async def mount_screen(
+    def request_screen_mount(
         self,
-        screen: type[TDEScreenBase],
+        TDE_Screen: type[TDEScreenBase],
     ) -> None:
-        """Mount a screen using the registered callback. This is the callback
-        that was registered with the `register_mounting_callback` method.
         """
-        if self.mounting_callback is None:
-            raise RuntimeError("No mounting callback has been registered.")
-        try:
-            new_screen = screen()
-        except Exception as e:
-            raise RuntimeError(f"Error while creating screen '{screen.__class__.__name__}': {e}") from e
-        try:
-            self.mounting_callback(new_screen)
-        except Exception as e:
-            raise RuntimeError(
-                f"Error while executing callback '{self.mounting_callback}' "
-                f"for screen '{screen.__class__.__name__}': {e}"
-            ) from e
-        self.active_sreens[new_screen.uid] = new_screen
+        Request the screen service to mount a new screen for the given TDEScreenBase.        
+
+        Args:
+            TDE_Screen (type[TDEScreenBase]): The screen class to mount.
+        Raises:
+            TypeError: If TDE_Screen is not a subclass of TDEScreenBase.
+            ValueError: If TDE_Screen has no SCREEN_ID defined.
+            RuntimeError: If a process with the given ID already exists.
+        """
+
+        # Stage 0: Validate
+        if not issubclass(TDE_Screen, TDEScreenBase):  # type: ignore[unused-ignore]
+            self.log.error(f"Invalid app class: {TDE_Screen.__name__} is not a subclass of TDEAppBase")
+            raise TypeError(f"{TDE_Screen.__name__} is not a valid TDEAppBase subclass")
+        if TDE_Screen.SCREEN_ID is None:
+            self.log.error(f"Invalid screen class: {TDE_Screen.__name__} has no SCREEN_ID defined.")
+            raise ValueError(f"{TDE_Screen.__name__} has no SCREEN_ID defined.")
+
+        self.run_worker(self._mount_screen, TDE_Screen)
 
     async def dismiss_screen(
         self,
@@ -146,99 +159,84 @@ class ScreenService(TDEServiceBase):
                 f"for screen '{screen.__class__.__name__} ': {e}"
             ) from e
 
-    def push_main_screen(self) -> None:
-        """Push the main screen onto the screen stack using the registered
-        mounting callback. This takes no arguments, as only 1 screen mounting
-        callback is allowed to be registered at a time.
-
-        This is currently only used by the Uber App Class (TermDesktop) to
-        tell the ScreenService to push the main screen onto the screen stack.
-        """
-        self.run_worker(
-            self.mount_screen,
-            MainScreen,
-            name="PushMainScreenWorker",
-        )
-
     ################
     # ~ Internal ~ #
     ################
     # This section is for methods that are only used internally
     # These should be marked with a leading underscore.
 
-    async def _launch_process(self, TDE_App: type[TDEAppBase]) -> None:
+    async def _mount_screen(self, TDE_Screen: type[TDEScreenBase]) -> None:
         """
+        Mount a screen using the registered callback. This is the callback
+        that was registered with the `register_mounting_callback` method.
+
         Args:
-            TDE_App (TDEAppBase): The app to launch.
+            TDE_Screen (TDEAppBase): The screen class to mount.
             Note that this is a class definition, not an instance.
         Raises:
-            TypeError: If TDE_App is not a subclass of TDEAppBase.
-            AssertionError: If the TDE_App is not valid (should never happen)
-        Raises:
+            TypeError: If TDE_Screen is not a subclass of TDEScreenBase.
+            AssertionError: If the TDE_Screen is not valid (should never happen)
             RuntimeError: If a process with the given ID already exists.
         """
-        self.log(f"Launching process for app: {TDE_App.APP_NAME}")
+        self.log(f"Screen process requesting mount: {TDE_Screen.SCREEN_ID}")
+        
+        # Stage 0: Validate
+        if self._mounting_callback is None:
+            raise RuntimeError("No mounting callback has been registered.")        
+        
+        # Stage 1: Set available process ID
+        assert TDE_Screen.SCREEN_ID is not None
+        process_id = self._set_available_process_id(TDE_Screen.SCREEN_ID)
 
-        assert issubclass(TDE_App, TDEAppBase)
-        assert TDE_App.APP_NAME is not None
-        assert TDE_App.APP_ID is not None
-
-        # Get the app process ID with a number if needed.
-        # This is to handle multiple instances of the same app.
-        # Note that this is a simple identifier just for the App Process Service.
-        # There is also a UID that is set on all types of processes in TDE.
-        process_id = self._set_available_process_id(TDE_App.APP_ID)
-
-        # * Create the app process instance
-        # This is the instance of the base app inherited from the TDEAppBase class. Right now
-        # it just holds all the app metadata. Store this in the process manager.
-        app_process = TDE_App(process_id=process_id)
+        # Stage 2: Create the screen process instance
         try:
-            self._add_process_to_dict(app_process, process_id)
-        except RuntimeError as e:
-            self.log.error(f"Failed to add process {process_id}: {e}")
+            screen_process = TDE_Screen(process_id=process_id)
+        except Exception as e:
             raise RuntimeError(
-                f"Failed to add process {process_id} for app {TDE_App.APP_NAME}. "
-                "This might be due to a duplicate process ID."
+                f"Error while creating screen process '{TDE_Screen.__class__.__name__}': {e}"
             ) from e
+        
+        # Stage 3: Add the screen process to the process dictionary
+        try:
+            self._add_process_to_dict(screen_process, process_id)
+        except RuntimeError as e:
+            raise RuntimeError(
+                f"Failed to add process {process_id} for screen {TDE_Screen.SCREEN_ID}. "
+                "This might be due to a duplicate process ID."
+            ) from e   
 
-        app_context: ProcessContext = {
-            "process_type": ProcessType.APP,
+        # Stage 4: Create the screen context dictionary
+        screen_context: ProcessContext = {
+            "process_type": ProcessType.SCREEN,
             "process_id": process_id,
-            "process_uid": app_process.uid,
+            "process_uid": screen_process.uid,
             "services": self.services_manager,
         }
 
-    def _add_process_to_dict(self, tde_app_instance: TDEAppBase, process_id: str) -> None:
-        """
-        Add a process to the app service's process dictionary.
-
-        Args:
-            tde_app_instance (TDEAppBase): The app instance to add.
-            process_id (str): The ID of the app process.
-        Raises:
-            RuntimeError: If a process with the given ID already exists.
-        """
-
-        if process_id in self._processes:
-            raise RuntimeError(f"Process with ID {process_id} already exists.")
-
-        self._processes[process_id] = tde_app_instance
-        self.log(f"Process {tde_app_instance.APP_NAME} with ID {process_id} added.")
-
-    def _set_available_process_id(self, APP_ID: str) -> str:
-
+        # Stage 5: Get screen class definition from process instance
         try:
-            current_set = self._instance_counter[APP_ID]  # get set if exists
-        except KeyError:
-            current_set: set[int] = set()  # if not, make a new set
-            self._instance_counter[APP_ID] = current_set
+            tde_screen = screen_process.get_screen()
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to get screen class from process {process_id} for screen {TDE_Screen.SCREEN_ID}."
+            ) from e
 
-        i = 1
-        while i in current_set:
-            i += 1
-        current_set.add(i)
-        if i == 1:
-            return f"{APP_ID}"
-        else:
-            return f"{APP_ID}_{i}"        
+        # Stage 6: Create the screen instance
+        try:
+            screen_instance = tde_screen(screen_context)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to create screen instance for {TDE_Screen.SCREEN_ID}: {e}"
+            ) from e
+
+        # Stage 7: Store the screen instance in the dictionary 
+        self._screen_instance_dict[process_id] = screen_instance
+
+        # Stage 8: Call the mounting callback with the new screen instance
+        try:
+            await self._mounting_callback(screen_instance)
+        except Exception as e:
+            raise RuntimeError(
+                f"Error while executing callback '{self._mounting_callback}' "
+                f"for screen '{TDE_Screen.__class__.__name__}': {e}"
+            ) from e

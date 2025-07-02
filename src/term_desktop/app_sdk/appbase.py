@@ -182,9 +182,6 @@ class TDEAppBase(AceOfBase):
     # ~ Backend Setup ~ #
     #####################
 
-    BROKEN: bool = False  # Indicates if the app is broken and cannot be launched.
-    MISSING_METHODS: frozenset[str] | None = None  # Set of missing abstract methods, if any.
-
     def __init__(self, process_id: str) -> None:
         """The ID is set by the process service when it initializes the app process.
         It will append a number to keep track of multiple instances of the same app.

@@ -4,9 +4,11 @@ from typing import TYPE_CHECKING, Type
 import os
 import importlib.util
 from pathlib import Path
-
 if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
+
+# Textual imports
+from textual.worker import WorkerError
 
 # Local imports
 import term_desktop.apps
@@ -76,21 +78,25 @@ class AppLoader(TDEServiceBase):
 
         - Function is pure: [no]"""
         self.log("Starting AppLoader service")
+        
+        #! NOTE: Might need to change this to be more like the app service and
+        # screen service - let the service manager handle the worker and error
+        # management, to manage all service workers in the same place.
 
+        self._failed_apps.clear()
+        worker = self.run_worker(
+            self._discover_apps,
+            self.directories,
+            name="AppLoaderWorker",
+            description="Discovering apps in directories",
+            group="AppLoader",
+            exclusive=True,
+        )        
         try:
-            self._failed_apps.clear()
-            worker = self.run_worker(
-                self._discover_apps,
-                self.directories,
-                name="AppLoaderWorker",
-                description="Discovering apps in directories",
-                group="AppLoader",
-                exclusive=True,
-            )
             self._registered_apps = await worker.wait()
-        except Exception as e:
+        except WorkerError as e:
             self.log.error(f"Failed to discover apps: {str(e)}")
-            raise RuntimeError("AppLoader failed to start due to an error.") from e
+            raise e
         else:
             if len(self.registered_apps) == 0:
                 self.log.error("Loader 'worked', but no apps were discovered. Must have malfunctioned.")

@@ -62,17 +62,14 @@ class StartMenu(SlideContainer):
     #####################
 
     @on(OptionList.OptionSelected)
-    async def option_selected(self, event: OptionList.OptionSelected) -> None:
+    def option_selected(self, event: OptionList.OptionSelected) -> None:
 
         if event.option_id:
             tde_app_type = self.registered_apps.get(event.option_id)
             if tde_app_type:
                 self.log.debug(f"Launching app: {tde_app_type.APP_NAME} ({event.option_id})")
                 services = self.app.query_one(ServicesManager)
-
-                # This will get made into a sync method with a worker in the future
-                # so that this calling method does not need to await this call.
-                await services.app_service.request_process_launch(tde_app_type)
+                services.app_service.request_app_launch(tde_app_type)
             self.close()
 
     @on(SlideContainer.SlideCompleted)

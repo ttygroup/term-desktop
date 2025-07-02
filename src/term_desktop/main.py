@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 # Textual imports
 from textual import on
 from textual.app import App
+from textual.widgets import Static
 from textual.binding import Binding
 from rich.rule import Rule
 
@@ -34,6 +35,7 @@ class TermDesktop(App[None]):
     def compose(self) -> ComposeResult:
         self.services = ServicesManager()
         yield self.services
+        yield Static("Term-Desktop is starting...")
 
     def on_mount(self) -> None:
 
@@ -49,7 +51,7 @@ class TermDesktop(App[None]):
         self.services.screen_service.push_main_screen()
 
     async def push_tde_screen(self, screen: TDEScreen) -> None:
-        """Push a TDE screen onto the screen stack."""
+        "Used by the screen service to push a TDE screen."
         await self.push_screen(screen)
 
     def action_log_debug_readout(self) -> None:

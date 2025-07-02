@@ -20,6 +20,12 @@ from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
 
 class TDEScreenBase(AceOfBase):
 
+    ################
+    # ~ CONTRACT ~ #
+    ################
+
+    SCREEN_ID: str | None = None
+
     def __init__(self, process_id: str) -> None:
         """The ID is set by the screen service when it initializes the screen process.
 
@@ -29,17 +35,30 @@ class TDEScreenBase(AceOfBase):
         self.process_id = process_id
 
     @abstractmethod
-    def get_screen(self) -> TDEScreen:
+    def get_screen(self) -> type[TDEScreen]:
         """
-        build me
+        #! ADD NOTE HERE
         """
-        #! FINISH CODING THIS
         ...
 
     @classmethod
     def validate(cls) -> None:
         super().validate()
-        # Additional class-specific validation can be added here.
+
+        required_members = {
+            "SCREEN_ID": "class attribute",
+            # more will go here as needed
+        }
+
+        for attr_name, kind in required_members.items():
+
+            try:
+                attr = getattr(cls, attr_name)
+            except AttributeError:
+                raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+            else:
+                if attr is None:
+                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
 
 
 class TDEScreen(Screen[None]):

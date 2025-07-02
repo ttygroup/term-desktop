@@ -26,6 +26,12 @@ from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
 
 class FooBase(AceOfBase):
 
+    ################
+    # ~ CONTRACT ~ #
+    ################
+
+    FOO_ID: str | None = None
+
     def __init__(self, process_id: str) -> None:
         """The ID is set by the Foo service when it initializes the Foo process.
 
@@ -40,6 +46,10 @@ class FooBase(AceOfBase):
         build me
         """
         ...
+
+    #####################
+    # ~ Backend Setup ~ #
+    #####################
 
     @classmethod
     def validate(cls) -> None:
