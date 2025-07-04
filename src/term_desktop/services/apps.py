@@ -7,11 +7,6 @@ from typing import TYPE_CHECKING  # , Any
 if TYPE_CHECKING:
     # from textual.worker import Worker
     from term_desktop.services.manager import ServicesManager
-    from term_desktop.app_sdk.appbase import (
-        TDEAppBase,
-        DefaultWindowSettings,
-        TDEMainWidget,
-    )
 
 # Textual imports
 # from textual.worker import WorkerError
@@ -20,7 +15,11 @@ if TYPE_CHECKING:
 from term_desktop.services.servicebase import TDEServiceBase
 from term_desktop.app_sdk import LaunchMode
 from term_desktop.aceofbase import ProcessContext, ProcessType
-
+from term_desktop.app_sdk.appbase import (
+    TDEAppBase,
+    DefaultWindowSettings,
+    TDEMainWidget,
+)
 
 class AppService(TDEServiceBase):
 
@@ -189,6 +188,9 @@ class AppService(TDEServiceBase):
             # app process instance every time a new process is launched
             custom_window_mounts = app_process.custom_window_mounts()
             window_styles = app_process.window_styles()
+
+            #! NOTE: The Window Service has not been rebuilt yet to use
+            #! the window base
 
             await self.services_manager.window_service.create_new_window(
                 content_instance=content_instance,

@@ -1,4 +1,4 @@
-"shell.py"
+"shellmanager.py"
 
 # python standard library imports
 from __future__ import annotations
@@ -45,6 +45,11 @@ from term_desktop.shell.ranger_theme import (
     FileExplorer,
     ExplorerPathBar,
 )
+
+#! NOTE: THIS IS JUST A PLACEHOLDER FOR THE SHELL MANAGER.
+# This is not an actual shell manager. I just copied in the code
+# for the old main screen. As of writing this, the addition of the
+# AceOfBase and converting everything to use it was just completed.
 
 
 class ShellManager(Widget):

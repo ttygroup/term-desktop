@@ -1,3 +1,5 @@
+"shellbase.py - Base classes for TDE Shell Sessions"
+
 from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any

@@ -51,6 +51,9 @@ class WindowService(TDEServiceBase):
         self.validate()
         self.window_manager = window_manager
 
+        #! NOTE: The window manager should be tracking the list of windows.
+        # This needs to be written into the next update.
+
     ################
     # ~ Messages ~ #
     ################
@@ -99,12 +102,13 @@ class WindowService(TDEServiceBase):
         This is used by the ProcessManager to mount windows for apps that are launched.
         """
         # For the forseeable future, there will only be one callback ID, which is the
-        # main screen's callback for the desktop. But this system is based on the
-        # Textual-Window library, which is designed to work as a plugin and thus
-        # be flexible enough to support multiple callback IDs in the future.
+        # main screen's callback for the desktop. I can't imagine why this might
+        # need another callback ID, but I'm making it possible just in case.
+
+        #! NOTE: The Window Service has not been rebuilt yet to use
+        #! the window base. This is going to be partially re-written.
 
         self.log(f"Creating new window attached to process ID '{process_id}'.")
-
         new_window = Window(
             content_instance,
             id=process_id,
