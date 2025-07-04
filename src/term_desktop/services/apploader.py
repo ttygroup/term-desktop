@@ -93,14 +93,14 @@ class AppLoaderService(TDEServiceBase):
             "group": self.SERVICE_ID,
             "description": "Discover apps in directories",
             "exit_on_error": False,
-            "start": False,
+            "start": True,
             "exclusive": True,  # only 1 app scan allowed at a time
             "thread": False,
         }
         worker = self.run_worker(self.directories, worker_meta=worker_meta)
 
         try:
-            self._registered_apps = await worker.run()
+            self._registered_apps = await worker.wait()
         except WorkerError as e:
             self.log.error(f"Failed to discover apps: {str(e)}")
             raise e

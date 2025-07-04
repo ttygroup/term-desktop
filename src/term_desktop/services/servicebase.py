@@ -87,7 +87,8 @@ class TDEServiceBase(AceOfBase):
 
         self._processes[process_id] = tde_process_instance
         self.log(
-            f"Process {process_id} with type {tde_process_instance.__class__.__name__} added to service."
+            f"Process {process_id} with type {tde_process_instance.__class__.__name__} "
+            f"added to {self.SERVICE_ID}."
         )
 
     def _set_available_process_id(self, plain_id: str) -> str:

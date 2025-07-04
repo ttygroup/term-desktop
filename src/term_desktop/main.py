@@ -44,7 +44,6 @@ class TermDesktop(App[None]):
     @on(ServicesManager.ServicesStarted)
     def all_services_started(self) -> None:
 
-        self.log.info("All services have been started successfully.")
         self.services.screen_service.register_pushing_callback(self.push_tde_screen)
 
         # Main app tells the screen service that its ready to push the main screen now

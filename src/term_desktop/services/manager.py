@@ -30,6 +30,8 @@ class ServicesManager(Widget):
     like run workers or send messages to the main app.
     """
 
+    SERVICE_ID = "services_manager"
+
     class WorkerMeta(TypedDict):
         "WorkerMeta is required to run work on the ServicesManager."
 
@@ -89,8 +91,8 @@ class ServicesManager(Widget):
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._start_all_services,
             "name": "StartAllServices",
-            "service_id": "services_manager",
-            "group": "service_manager",
+            "service_id": self.SERVICE_ID,
+            "group": self.SERVICE_ID,
             "description": "Start all services in the ServicesManager.",
             "exit_on_error": True,
             "start": True,
@@ -201,11 +203,6 @@ class ServicesManager(Widget):
             missing_keys = required_keys - worker_meta.keys()
             raise TypeError(f"worker_meta is missing required keys: {missing_keys}")
 
-        service_id = worker_meta["service_id"]
-        worker_id = f"{id(self)}"
-        start_time = time()
-        self.active_workers[worker_id] = (worker_meta["name"], service_id, start_time)
-
         partial_func = partial(worker_meta["work"], *args, **kwargs)
         worker = super().run_worker(
             work=partial_func,
@@ -218,6 +215,11 @@ class ServicesManager(Widget):
             thread=worker_meta["thread"],
         )
 
+        service_id = worker_meta["service_id"]
+        worker_id = f"{id(worker)}"
+        start_time = time()
+        self.active_workers[worker_id] = (worker_meta["name"], service_id, start_time)        
+
         # These attributes are assigned directly onto the worker instance:
         setattr(worker, "service_id", service_id)
         setattr(worker, "worker_id", worker_id)
@@ -228,11 +230,13 @@ class ServicesManager(Widget):
     def worker_state_changed(self, event: Worker.StateChanged) -> None:
 
         worker = event.worker  # type: ignore (Textual type hinting issue)
-        self.log(f"Worker: {worker.name} is {event.state.name}")
 
-        if worker.state == WorkerState.RUNNING and (not self._worker_check_pending):
-            self._worker_check_pending = True
-            self.set_timer(3, self._check_running_workers)
+        if worker.state == WorkerState.RUNNING:
+            self.log(f"Worker {worker.name} is running.")
+
+            if not self._worker_check_pending:
+                self._worker_check_pending = True
+                self.set_timer(3, self._check_running_workers)
 
         elif worker.state == WorkerState.ERROR:
             self.log.error(f"Worker {worker.name} encountered an error: {worker.error!r}")
@@ -246,37 +250,44 @@ class ServicesManager(Widget):
             )
 
         elif worker.state == WorkerState.SUCCESS:
+            self.log(f"Worker {worker.name} has completed successfully.")
+
             # Remove the worker from the active workers dict
             worker_id = getattr(worker, "worker_id") # type: ignore (Textual type hinting issue)
+            self.log(f"ACTIVE WORKERS LIST: {self.active_workers}")
             assert worker_id in self.active_workers
             del self.active_workers[worker_id]
-            self.log(f"Worker {worker.name} has completed successfully.")
 
     def _check_running_workers(self) -> None:
         """Check if any workers are still running and log their status."""
+        
         self._worker_check_pending = False
         self.workers_over_limit: dict[str, Worker[Any]] = {}
+        at_least_one_from_service_manager = False
         if self.workers:
             
             log_string = ""
             for worker in self.workers:
+                worker_id = getattr(worker, "worker_id", None)
+                if worker_id is None:  # this means not from service manager
+                    continue
+                at_least_one_from_service_manager = True
                 start_time = cast(float, getattr(worker, "start_time"))
                 elapsed_time = time() - start_time
                 formatted_elapsed = f"{elapsed_time:.2f}"
                 log_string += f"{worker.name}: {worker.state.name} | Elapsed time: {formatted_elapsed}\n"
 
                 if elapsed_time > 10:
-                    worker_id = getattr(worker, "worker_id")
                     self.workers_over_limit[worker_id] = worker
             self.log(f"Currently running workers:\n{log_string}")
             
-            # If we have workers, check pending to true and restart the timer
-            self._worker_check_pending = True
-            self.set_timer(3, self._check_running_workers)
+            if at_least_one_from_service_manager:
+                self._worker_check_pending = True
+                self.set_timer(3, self._check_running_workers)
 
         if self.workers_over_limit:
             for worker in self.workers_over_limit.values():
-                self.log.error(f"Worker {worker.name} has exceeded the time limit and will be cancelled.")
+                self.log.error(f"Worker {worker.name} has exceeded the time limit")
                 worker.cancel()
         
         else:

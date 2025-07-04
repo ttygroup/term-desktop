@@ -41,8 +41,7 @@ class MainScreenMeta(TDEScreenBase):
 
 class MainScreen(TDEScreen):
 
-    def compose(self) -> ComposeResult:
-        yield Static("Main Screen", id="main_screen_title")
+    def on_mount(self) -> None:
         self.call_after_refresh(self.mount_shell)
 
     async def mount_shell(self) -> None:
