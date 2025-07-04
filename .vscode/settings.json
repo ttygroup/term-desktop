@@ -1,0 +1,23 @@
+{
+	"better-comments.tags": [
+		{
+			"tag": "~",
+			"color": "#a7f50c",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#303136",
+			"bold": false,
+			"italic": false
+		},
+		{
+			"tag": "<-",
+			"color": "#a7f50c",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#303136",
+			"bold": false,
+			"italic": false
+		}
+	],
+	"python.analysis.typeCheckingMode": "strict"
+} 

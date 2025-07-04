@@ -5,22 +5,24 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from term_desktop.services.servicesmanager import ServicesManager
+    from term_desktop.services.manager import ServicesManager
 
 # Textual imports
 # from textual import log   #? <- use this for logging to Textual dev console
-from term_desktop.services.servicebase import BaseService
+from term_desktop.services.servicebase import TDEServiceBase
 
 # Textual library imports
 
 # Local imports
 
 
-class FileAssociationService(BaseService):
+class FileAssociationService(TDEServiceBase):
 
     #####################
     # ~ Initialzation ~ #
     #####################
+
+    SERVICE_ID = "file_association_service"
 
     def __init__(
         self,
@@ -30,6 +32,11 @@ class FileAssociationService(BaseService):
         Initialize the [INSERT SERVICE NAME HERE]
         """
         super().__init__(services_manager)
+
+    ################
+    # ~ Messages ~ #
+    ################
+    # None yet
 
     ####################
     # ~ External API ~ #
@@ -52,5 +59,5 @@ class FileAssociationService(BaseService):
     ################
     # ~ Internal ~ #
     ################
-    # This section is for methods that are only used internally 
+    # This section is for methods that are only used internally
     # These should be marked with a leading underscore.

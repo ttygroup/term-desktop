@@ -2,10 +2,10 @@
 
 ## Installation
 
-Install [Just](https://github.com/casey/just) to use the justfile.
-Clone this repo
-`uv sync` (or `just install`)
-`uv run term-desktop` (or `just run`)
+1) Install [Just](https://github.com/casey/just) to use the justfile.
+1) Clone this repo
+1) `uv sync` (or `just install`)
+1) `uv run term-desktop` (or `just run`)
 
 ## Documentation
 

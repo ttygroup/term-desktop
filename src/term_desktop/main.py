@@ -6,17 +6,19 @@ from typing import TYPE_CHECKING  # , cast  # , Type #, Any
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
+    from term_desktop.screens.screenbase import TDEScreen
 
 # Textual imports
+from textual import on
 from textual.app import App
+from textual.widgets import Static
 from textual.binding import Binding
 from rich.rule import Rule
 
 #################
 # Local imports #
 #################
-from term_desktop.services import ServicesWidget
-from term_desktop.screens import MainScreen
+from term_desktop.services import ServicesManager
 
 # from term_desktop.app_sdk.appbase import TDEApp
 
@@ -26,26 +28,30 @@ class TermDesktop(App[None]):
     TITLE = "Term-Desktop"
     CSS_PATH = "styles.tcss"
 
-    SCREENS = {
-        "main": MainScreen,
-    }
-
     BINDINGS = [
         Binding("f8", "log_debug_readout", "Log app debug readout to dev console", show=False),
     ]
 
-    def __init__(self):
-        super().__init__()
-
     def compose(self) -> ComposeResult:
-        self.services = ServicesWidget()
+        self.services = ServicesManager()
         yield self.services
+        yield Static("Term-Desktop is starting...")
 
-    async def on_mount(self) -> None:
+    def on_mount(self) -> None:
 
-        self.services.create_services_manager()
-        await self.services.start_services()
-        self.call_after_refresh(self.push_screen, "main")  # push screen after everything is ready
+        self.services.start_all_services()
+
+    @on(ServicesManager.ServicesStarted)
+    def all_services_started(self) -> None:
+
+        self.services.screen_service.register_pushing_callback(self.push_tde_screen)
+
+        # Main app tells the screen service that its ready to push the main screen now
+        self.services.screen_service.push_main_screen()
+
+    async def push_tde_screen(self, screen: TDEScreen) -> None:
+        "Used by the screen service to push a TDE screen."
+        await self.push_screen(screen)
 
     def action_log_debug_readout(self) -> None:
 

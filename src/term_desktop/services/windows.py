@@ -1,14 +1,14 @@
-"process_manager.py - The process manager for handling processes in TDE."
+"windows.py - The window manager service for the Terminal Desktop Environment (TDE)."
 
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Awaitable, cast  # , Any
+
 if TYPE_CHECKING:
-    from term_desktop.services.servicesmanager import ServicesManager
+    from term_desktop.services.manager import ServicesManager
     from term_desktop.app_sdk import TDEMainWidget, DefaultWindowSettings, CustomWindowMounts
 
 # Textual imports
-from textual import log
 from textual.widget import Widget
 
 # Textual library imports
@@ -16,14 +16,16 @@ from textual_window import window_manager, Window
 from textual_window.window import WindowStylesDict
 
 # Local imports
-from term_desktop.services.servicebase import BaseService
+from term_desktop.services.servicebase import TDEServiceBase
 
 
-class WindowService(BaseService):
+class WindowService(TDEServiceBase):
 
     #####################
     # ~ Initialzation ~ #
     #####################
+
+    SERVICE_ID = "window_service"
 
     def __init__(
         self,
@@ -46,7 +48,16 @@ class WindowService(BaseService):
         bridge to all the important stuff that we want to do with windows in TDE.
         """
         super().__init__(services_manager)
+        self.validate()
         self.window_manager = window_manager
+
+        #! NOTE: The window manager should be tracking the list of windows.
+        # This needs to be written into the next update.
+
+    ################
+    # ~ Messages ~ #
+    ################
+    # None yet
 
     ####################
     # ~ External API ~ #
@@ -55,12 +66,12 @@ class WindowService(BaseService):
     # anything else in TDE, including other services.
 
     async def start(self) -> bool:
-        log("Starting Window service")
+        self.log("Starting Window service")
         # nothing to do here yet
         return True
 
     async def stop(self) -> bool:
-        log("Stopping Window service")
+        self.log("Stopping Window service")
         # nothing to do here yet
         return True
 
@@ -91,12 +102,13 @@ class WindowService(BaseService):
         This is used by the ProcessManager to mount windows for apps that are launched.
         """
         # For the forseeable future, there will only be one callback ID, which is the
-        # main screen's callback for the desktop. But this system is based on the
-        # Textual-Window library, which is designed to work as a plugin and thus
-        # be flexible enough to support multiple callback IDs in the future.
+        # main screen's callback for the desktop. I can't imagine why this might
+        # need another callback ID, but I'm making it possible just in case.
 
-        log(f"Creating new window attached to process ID '{process_id}'.")
+        #! NOTE: The Window Service has not been rebuilt yet to use
+        #! the window base. This is going to be partially re-written.
 
+        self.log(f"Creating new window attached to process ID '{process_id}'.")
         new_window = Window(
             content_instance,
             id=process_id,
@@ -133,6 +145,10 @@ class WindowService(BaseService):
         """Get the current window for a given process ID.
         This will only work if the process ID has an associated window.
 
+        This is mostly here to allow apps to retrieve their own window.
+        Every app can use `self.process_id` to get its own process ID,
+        and then use this method to retrieve the window associated with that process ID.
+
         Args:
             process_id: The ID of the window to retrieve.
         Returns:
@@ -156,7 +172,7 @@ class WindowService(BaseService):
         else:
             return window
 
-    # ? This is not yet used by anything yet in TDE land.
+    #! This is not yet used by anything yet in TDE land.
     def remove_window(self, window: Window | str) -> None:
         """Unmount a given window and remove it from the window manager.
 

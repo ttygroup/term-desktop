@@ -1,11 +1,15 @@
 # Features Roadmap
 
-## All Services Stuff
+------------------------
+
+## Core Features
+
+### All Services Stuff
 
 [ ] Build a Services Manager screen to view the status of all services
 [X] Build a run_worker bridge function in BaseService so that services can run workers
 
-## App SDK
+### App SDK
 
 [ ] Create test/dummy app to test the SDK and loader service
 [ ] Make app create a /home/user/term-desktop/apps folder for local dev
@@ -17,33 +21,52 @@
 [X] Implement the window styles dictionary from Textual-window library
 [X] Make the ProcessManager set the `process_id` attribute on the main widget of the app
 
-## Window Service
+### Window Service
 
 [X] Implement the `get_window_by_process_id` method in WindowService
 
-## App Selector / File Associator
+### App Selector / File Associator
 
 [ ] Build file association service
 [X] Build app selector window
 
-## User Settings
+### User Settings
 
 [ ] Build user settings app
 [ ] Implement SQLite for storing user settings
 
-## Start Menu
+### Shell
+
+[ ] Build a way to switch between multiple desktop shells ("shell themes")
+
+------------------------
+
+## Apps related
+
+### Apps to make/include
+
+[ ] Build TaskBuddy app
+[ ] Add TipTop as the built-in resource monitor
+
+------------------------
+
+## Shell Features
+
+### Ranger Shell Theme
+
+#### Start Menu
 
 [ ] Implement fuzzy finder in start menu
 [ ] Add icons to start menu
 [ ] Create different sections in start menu
 
-## Desktop
+#### Desktop
 
 [ ] Create boot screen
 [ ] Build desktop/theme customization app
 [ ] Desktop icons
 
-## File Explorer
+#### File Explorer
 
 [ ] Build way to change root directory
 [ ] Add file search functionality
@@ -51,8 +74,3 @@
 [ ] Add file operations (copy, move, delete, rename)
 [X] Build file explorer info box
 [ ] Implement Textual-FSpicker for something (not sure yet... but something, surely.)
-
-## Apps
-
-[ ] Build TaskBuddy app
-[ ] Add TipTop as the built-in resource monitor

@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
 
 # Textual imports
+# from textual import log   #? <- use this for logging to Textual dev console
 from term_desktop.services.servicebase import TDEServiceBase
 
 # Textual library imports
@@ -15,19 +16,23 @@ from term_desktop.services.servicebase import TDEServiceBase
 # Local imports
 
 
-class ServiceTemplate(TDEServiceBase):
+class ShellService(TDEServiceBase):
 
     #####################
     # ~ Initialzation ~ #
     #####################
 
-    SERVICE_ID = "foo_service"
+    SERVICE_ID = "shell_service"
 
-    def __init__(self, services_manager: ServicesManager) -> None:
+    def __init__(
+        self,
+        services_manager: ServicesManager,
+    ) -> None:
         """
-        Initialize the [INSERT SERVICE NAME HERE]
+        Initialize the Shell service.
         """
         super().__init__(services_manager)
+        self.validate()
 
     ################
     # ~ Messages ~ #
@@ -41,7 +46,7 @@ class ServiceTemplate(TDEServiceBase):
     # accessed by anything else in TDE, including other services.
 
     async def start(self) -> bool:
-        """Start the [INSERT SERVICE NAME HERE] service."""
+        """Start the Shell service. service."""
 
         # Example of using a worker inside of a service
         # Any extra positional and keyword arguments that not part of the
@@ -61,16 +66,10 @@ class ServiceTemplate(TDEServiceBase):
         # )
         # some_value = await worker.wait()
 
-        if True:
-            return True
-        else:
-            return False
+        return True
 
     async def stop(self) -> bool:
-        if True:
-            return True
-        else:
-            return False
+        return True
 
     ################
     # ~ Internal ~ #

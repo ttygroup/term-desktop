@@ -28,14 +28,14 @@ from textual_window.window import WindowStylesDict
 
 # Local imports
 from term_desktop.app_sdk import (
-    TDEApp,
+    TDEAppBase,
     TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
 )
 
 
-class Calculator(TDEApp):
+class CalculatorMeta(TDEAppBase):
 
     APP_NAME = "Calculator"
     APP_ID = "calculator"

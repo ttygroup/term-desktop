@@ -24,7 +24,7 @@ from textual_window.window import WindowStylesDict
 
 # Local imports
 from term_desktop.app_sdk import (
-    TDEApp,
+    TDEAppBase,
     TDEMainWidget,
     LaunchMode,
     CustomWindowSettings,
@@ -55,14 +55,12 @@ class TemplateContent(TDEMainWidget):
         # You can also access the active window using the process ID.
         # The process_id is available as self.process_id, which is set by the process manager.
         # To get the window by current process ID:
-        current_window = self.services.window_service.get_window_by_process_id(
-            self.process_id 
-        ) 
+        current_window = self.services.window_service.get_window_by_process_id(self.process_id)
         self.log(current_window)
 
     @on(events.DescendantFocus)
     def descendant_focused(self, event: events.DescendantFocus) -> None:
-        
+
         # This is an example of how you can use the DescendantFocus and DescendantBlur events
         # which are sent by any child widgets inside of the main widget.
         # This is useful if you want to do something like modify something on the
@@ -74,7 +72,8 @@ class TemplateContent(TDEMainWidget):
     def descendant_blurred(self, event: events.DescendantBlur) -> None:
         pass
 
-class Template(TDEApp):
+
+class Template(TDEAppBase):
 
     APP_NAME: str | None = None
     APP_ID: str | None = None

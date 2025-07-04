@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "tamasfe.even-better-toml",
+        "charliermarsh.ruff",
+        "textualize.textual-syntax-highlighter",
+        "aaron-bond.better-comments"
+    ]
+}

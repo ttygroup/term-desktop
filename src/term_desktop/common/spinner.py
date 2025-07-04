@@ -72,18 +72,15 @@ class SpinnerWidget(Static):
             self.interval_timer = self.set_interval(self.interval, self.update_spinner)
 
     async def update_spinner(self) -> None:
-        self.log("Updating spinner")
         self.update(self._spinner)
 
     def pause(self, hide: bool = False) -> None:
-        """Pause the spinner."""
         if self.interval_timer:
             self.interval_timer.pause()
         if hide:
             self.display = False
 
     def resume(self, show: bool = True) -> None:
-        """Resume the spinner."""
         if self.interval_timer:
             self.interval_timer.resume()
         else:
