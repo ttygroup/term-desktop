@@ -21,6 +21,8 @@ class ServiceTemplate(TDEServiceBase):
     # ~ Initialzation ~ #
     #####################
 
+    SERVICE_ID = "foo_service"
+
     def __init__(self, services_manager: ServicesManager) -> None:
         """
         Initialize the [INSERT SERVICE NAME HERE]

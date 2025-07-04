@@ -11,6 +11,7 @@ from textual.message import Message
 
 # Local imports
 from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
+
 # from term_desktop.shell.shellmanager import ShellManager
 
 # ? ShellService  →  ShellSession (ABC)  →  ShellLayoutManager

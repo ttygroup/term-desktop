@@ -21,8 +21,9 @@ if TYPE_CHECKING:
 # from textual_slidecontainer import SlideContainer
 
 # Local imports
-from term_desktop.screen.screenbase import ScreenBase
+from term_desktop.screens.screenbase import ScreenBase
 from term_desktop.core.shell import Shell
+
 
 class ShellSession(AceOfBase):
 

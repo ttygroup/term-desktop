@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING  # , cast
 if TYPE_CHECKING:
     from textual.app import ComposeResult
     from textual.widgets.directory_tree import DirEntry
+    from term_desktop.services import ServicesManager
 
 # Textual imports
 from textual import on, events  # , work
@@ -23,7 +24,6 @@ from textual_slidecontainer import SlideContainer
 #################
 # Local imports #
 #################
-from term_desktop.services import ServicesWidget
 from term_desktop.common import (
     DummyScreen,
 )
@@ -57,11 +57,14 @@ class ShellManager(Widget):
         Binding("f12", "toggle_transparency", "Toggle Transparency"),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, services: ServicesManager) -> None:
         super().__init__()
+        self.services = services
         self.styles.opacity = 0
 
     def compose(self) -> ComposeResult:
+
+        self.log.debug("Composing ShellManager...")
 
         ##############################
         ### SCREEN PUSHING WIDGETS ###
@@ -71,7 +74,7 @@ class ShellManager(Widget):
         ### DOCKED WIDGETS ###
         yield FileExplorer()  # the order these are in is important for the layout
         yield ExplorerPathBar()
-        yield StartMenu()
+        yield StartMenu(self.services)
         yield TaskBar(start_open=True)
 
         ###############
@@ -81,8 +84,7 @@ class ShellManager(Widget):
         # NOTE: Windows are mounted into the Desktop container.
 
     def on_mount(self) -> None:
-        services = self.app.query_one(ServicesWidget).services
-        services.window_service.register_mounting_callback(
+        self.services.window_service.register_mounting_callback(
             self.mounting_callback,
             callback_id="main_desktop",
         )

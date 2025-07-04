@@ -1,4 +1,4 @@
-"explorer.py - A file explorer for the SSH Desktop application."
+"explorer.py - File explorer for TDE Ranger theme."
 
 # python standard library imports
 from __future__ import annotations
@@ -8,7 +8,7 @@ import os
 import datetime
 
 if TYPE_CHECKING:
-    from term_desktop.main import MainScreen
+    pass
 
 from textual.widgets.directory_tree import DirEntry
 
@@ -47,13 +47,11 @@ class ExplorerPathBar(SlideContainer):
         yield path_input
 
     def update_path(self, path: Path) -> None:
-        jump_clicker: type[MainScreen]  # .node_highlighted()  # noqa: F842 # type: ignore
 
         path_input = self.query_one(Input)
         path_input.value = str(path)
 
     def shift_ui_for_taskbar(self, dock: str) -> None:
-        jump_clicker: type[MainScreen]  # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
 
         if dock == "top":
             self.styles.height = 1
@@ -237,7 +235,6 @@ class FileExplorer(SlideContainer):
             self.query_one(CustomDirectoryTree).visible = False
 
     def shift_ui_for_taskbar(self, dock: str) -> None:
-        jump_clicker: type[MainScreen]  # .windowbar_dock_toggled()  # noqa: F842 # type: ignore
 
         vertical = self.query_one(Vertical)
         if dock == "top":
@@ -341,26 +338,6 @@ class FileExplorer(SlideContainer):
             return f"{size_bytes / (1024 * 1024):.1f} MB"
         else:
             return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
-
-    @work(thread=True, group="get_directory_size", exclusive=True, exit_on_error=False)
-    def get_directory_size_old(self, path: Path) -> tuple[int, int]:
-
-        total_size = 0
-        file_count = 0
-
-        try:
-            for item in path.rglob("*"):  # Recursively get all items
-                if item.is_file():
-                    try:
-                        total_size += item.stat().st_size
-                        file_count += 1
-                    except (OSError, PermissionError):
-                        # Skip files we can't access
-                        pass
-        except (OSError, PermissionError):
-            self.log.error(f"Permission denied accessing some contents of: {path}")
-
-        return total_size, file_count
 
     @work(thread=True, group="get_directory_size", exclusive=True, exit_on_error=False)
     def get_directory_size(self, path: Path) -> tuple[int, int]:

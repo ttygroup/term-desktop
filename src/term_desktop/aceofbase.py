@@ -20,6 +20,7 @@ class ProcessType(enum.Enum):
     WINDOW = "window"
     # Add more process types as needed.
 
+
 class ProcessContext(TypedDict, total=True):
     """
     'Children' that are spawned by a process will always have the
@@ -87,7 +88,7 @@ class AceOfBase(ABC):
         Make sure you call `super().validate()` if you override this
         method in a subclass."""
 
-        # EXPLANATION: All implemented abstract methods are removed out of 
+        # EXPLANATION: All implemented abstract methods are removed out of
         # cls.__abstractmethods__ when the class is instantiated. If there are any left,
         # it means the class is not fully implemented and should not be instantiated.
         # Normally an ABC only checks for this when you try to instantiate it,

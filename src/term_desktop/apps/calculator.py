@@ -35,7 +35,7 @@ from term_desktop.app_sdk import (
 )
 
 
-class Calculator(TDEAppBase):
+class CalculatorMeta(TDEAppBase):
 
     APP_NAME = "Calculator"
     APP_ID = "calculator"

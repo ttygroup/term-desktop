@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 from abc import abstractmethod
-from functools import partial
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any  # , Callable, TypedDict
 
 if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
@@ -23,37 +22,50 @@ from term_desktop.aceofbase import AceOfBase
 
 class TDEServiceBase(AceOfBase):
 
+    SERVICE_ID = None
+
     def __init__(self, services_manager: ServicesManager) -> None:
         self.services_manager = services_manager
-        self._processes: dict[str, AceOfBase] = {}        
+        self._processes: dict[str, AceOfBase] = {}
         self._instance_counter: dict[str, set[int]] = {}
 
     @classmethod
     def validate(cls) -> None:
         super().validate()
-        # Additional class-specific validation can be added here.
+
+        required_members = {
+            "SERVICE_ID": "class attribute",
+            # more will go here as needed
+        }
+
+        for attr_name, kind in required_members.items():
+            try:
+                attr = getattr(cls, attr_name)
+            except AttributeError:
+                raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+            else:
+                if attr is None:
+                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
 
     @property
     def processes(self) -> dict[str, AceOfBase]:
         """Get the currently running app processes."""
         return self._processes
-    
+
     @property
     def instance_counter(self) -> dict[str, set[int]]:
         """Get the instance counter for each app ID."""
-        return self._instance_counter    
+        return self._instance_counter
 
     ################
     # ~ Contract ~ #
     ################
 
     @abstractmethod
-    async def start(self) -> bool:
-        ...
+    async def start(self) -> bool: ...
 
     @abstractmethod
-    async def stop(self) -> bool:
-        ...
+    async def stop(self) -> bool: ...
 
     #######################
     # ~ Process Methods ~ #
@@ -93,7 +105,7 @@ class TDEServiceBase(AceOfBase):
         if i == 1:
             return f"{plain_id}"
         else:
-            return f"{plain_id}_{i}"        
+            return f"{plain_id}_{i}"
 
     #! Not used by anything yet
     def get_process_by_id(self, process_id: str) -> AceOfBase:
@@ -110,27 +122,20 @@ class TDEServiceBase(AceOfBase):
         if process_id not in self._processes:
             raise KeyError(f"Process with ID {process_id} does not exist.")
         return self._processes[process_id]
-    
+
     ######################
     # ~ Bridge Methods ~ #
     ######################
     # These are all methods that bridge to a corresponding method on the
     # services manager. Since base classes are not Textual objects, they do not have
     # access to textual abilities like run worker, post message, or log to console.
-    # Futhermore, since all service workers run on the service manager class, that
-    # might make it easier to monitor or control them in the future
+    # Also, since all service workers run on the service manager class, that
+    # creates a central place to monitor and control them.
 
     def run_worker(
         self,
-        work: Callable[..., Any],
         *args: Any,
-        name: str | None = "",
-        group: str = "services",
-        description: str = "",
-        exit_on_error: bool = True,
-        start: bool = False,
-        exclusive: bool = False,
-        thread: bool = True,
+        worker_meta: ServicesManager.WorkerMeta,
         **kwargs: Any,
     ) -> Worker[Any]:
         """
@@ -145,19 +150,7 @@ class TDEServiceBase(AceOfBase):
         Returns:
             Worker[Any]: The worker instance that was started.
         """
-        self.log.debug(f"Running worker: {name} in group: {group}")
-        partial_func = partial(work, *args, **kwargs)
-        worker = self.services_manager.run_worker(
-            work=partial_func,
-            name=name,
-            group=group,
-            description=description,
-            exit_on_error=exit_on_error,
-            start=start,
-            exclusive=exclusive,
-            thread=thread,
-        )
-        return worker
+        return self.services_manager.run_worker(*args, worker_meta=worker_meta, **kwargs)
 
     def post_message(self, message: Message) -> None:
         """

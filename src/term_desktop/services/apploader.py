@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Type
 import os
 import importlib.util
 from pathlib import Path
+
 if TYPE_CHECKING:
     from term_desktop.services.manager import ServicesManager
 
@@ -16,11 +17,13 @@ from term_desktop.app_sdk.appbase import TDEAppBase
 from term_desktop.services.servicebase import TDEServiceBase
 
 
-class AppLoader(TDEServiceBase):
+class AppLoaderService(TDEServiceBase):
 
     #####################
     # ~ Initialzation ~ #
     #####################
+
+    SERVICE_ID = "app_loader_service"
 
     def __init__(
         self,
@@ -31,6 +34,8 @@ class AppLoader(TDEServiceBase):
         to the list of directories to search for app files.
         """
         super().__init__(services_manager)
+        self.validate()
+
         self.directories: list[Path] = []
         self._registered_apps: dict[str, Type[TDEAppBase]] = {}
         self._failed_apps: dict[str, Exception] = {}
@@ -77,23 +82,25 @@ class AppLoader(TDEServiceBase):
             RuntimeError: If the app discovery fails or no apps are found.
 
         - Function is pure: [no]"""
-        self.log("Starting AppLoader service")
-        
-        #! NOTE: Might need to change this to be more like the app service and
-        # screen service - let the service manager handle the worker and error
-        # management, to manage all service workers in the same place.
 
+        self.log("Starting AppLoader service")
         self._failed_apps.clear()
-        worker = self.run_worker(
-            self._discover_apps,
-            self.directories,
-            name="AppLoaderWorker",
-            description="Discovering apps in directories",
-            group="AppLoader",
-            exclusive=True,
-        )        
+
+        worker_meta: ServicesManager.WorkerMeta = {
+            "work": self._discover_apps,
+            "name": "DiscoverAppsWorker",
+            "service_id": self.SERVICE_ID,
+            "group": self.SERVICE_ID,
+            "description": "Discover apps in directories",
+            "exit_on_error": False,
+            "start": False,
+            "exclusive": True,  # only 1 app scan allowed at a time
+            "thread": False,
+        }
+        worker = self.run_worker(self.directories, worker_meta=worker_meta)
+
         try:
-            self._registered_apps = await worker.wait()
+            self._registered_apps = await worker.run()
         except WorkerError as e:
             self.log.error(f"Failed to discover apps: {str(e)}")
             raise e
@@ -102,9 +109,10 @@ class AppLoader(TDEServiceBase):
                 self.log.error("Loader 'worked', but no apps were discovered. Must have malfunctioned.")
                 return True
             else:
-                self.log.info(f"Discovered {len(self.registered_apps)} apps")
-                for app_id, app_class in self.registered_apps.items():
-                    self.log.debug(f"ID: {app_id} - Display Name: {app_class.APP_NAME}")
+                self.log.info(
+                    f"Discovered {len(self.registered_apps)} apps: \n"
+                    f"{', '.join(self.registered_apps.keys())}"
+                )
             return True
 
     async def stop(self) -> bool:
@@ -133,7 +141,7 @@ class AppLoader(TDEServiceBase):
     # This section is for methods that are only used internally
     # These should be marked with a leading underscore.
 
-    def _discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEAppBase]]:
+    async def _discover_apps(self, directories: list[Path]) -> dict[str, Type[TDEAppBase]]:
         """
         Scan the provided app directories for apps and attempt to load them.
         Called by AppLoader.start() (above)

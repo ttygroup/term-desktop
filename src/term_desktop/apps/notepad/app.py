@@ -33,7 +33,7 @@ from term_desktop.app_sdk import (
 )
 
 
-class Notepad(TDEAppBase):
+class NotepadMeta(TDEAppBase):
 
     APP_NAME = "Notepad"
     APP_ID = "notepad"

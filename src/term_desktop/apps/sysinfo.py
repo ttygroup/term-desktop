@@ -30,7 +30,7 @@ from term_desktop.app_sdk import (
 )
 
 
-class SysInfo(TDEAppBase):
+class SysInfoMeta(TDEAppBase):
 
     APP_NAME = "System Information"
     APP_ID = "sysinfo"

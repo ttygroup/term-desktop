@@ -2,8 +2,10 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING  # , Any
+
 if TYPE_CHECKING:
+    # from textual.worker import Worker
     from term_desktop.services.manager import ServicesManager
     from term_desktop.app_sdk.appbase import (
         TDEAppBase,
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
     )
 
 # Textual imports
-from textual.worker import WorkerError
+# from textual.worker import WorkerError
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
@@ -26,6 +28,8 @@ class AppService(TDEServiceBase):
     # ~ Initialzation ~ #
     #####################
 
+    SERVICE_ID = "app_service"
+
     def __init__(
         self,
         services_manager: ServicesManager,
@@ -37,6 +41,7 @@ class AppService(TDEServiceBase):
             services_manager (ServicesManager): The services manager instance.
         """
         super().__init__(services_manager)
+        self.validate()
         self._content_instance_dict: dict[str, TDEMainWidget] = {}
 
     ################
@@ -56,12 +61,12 @@ class AppService(TDEServiceBase):
         return self._content_instance_dict
 
     async def start(self) -> bool:
-        self.log("Starting ProcessManager service")
+        self.log("Starting App Service")
         # Nothing to do here yet.
         return True
 
     async def stop(self) -> bool:
-        self.log("Stopping ProcessManager service")
+        self.log("Stopping App Service")
         self._processes.clear()
         self._instance_counter.clear()
         return True
@@ -86,7 +91,19 @@ class AppService(TDEServiceBase):
             self.log.error(f"Invalid app class: {TDE_App.__name__} is not a subclass of TDEAppBase")
             raise TypeError(f"{TDE_App.__name__} is not a valid TDEAppBase subclass")
 
-        self.run_worker(self._launch_app, TDE_App)
+        assert TDE_App.APP_NAME is not None
+        worker_meta: ServicesManager.WorkerMeta = {
+            "work": self._launch_app,
+            "name": "LaunchAppWorker-" + TDE_App.APP_NAME,
+            "service_id": self.SERVICE_ID,
+            "group": self.SERVICE_ID,
+            "description": "Launch app " + TDE_App.APP_NAME,
+            "exit_on_error": False,
+            "start": True,
+            "exclusive": False,  # This is not an exclusive worker, multiple apps can be launched at once
+            "thread": False,
+        }
+        self.run_worker(TDE_App, worker_meta=worker_meta)
 
     ################
     # ~ Internal ~ #
@@ -117,9 +134,7 @@ class AppService(TDEServiceBase):
         try:
             app_process = TDE_App(process_id=process_id)
         except Exception as e:
-            raise RuntimeError(
-                f"Error while creating app process '{TDE_App.__class__.__name__}': {e}"
-            ) from e
+            raise RuntimeError(f"Error while creating app process '{TDE_App.__class__.__name__}': {e}") from e
 
         # Stage 3: Add the app process to the process dictionary
         try:
@@ -147,7 +162,7 @@ class AppService(TDEServiceBase):
                 raise RuntimeError(
                     f"The main_content property of {app_process.APP_NAME} must return a Widget if your app is not a Daemon"
                 )
-            
+
             # Stage 6: Create the main content instance
             try:
                 content_instance = main_content(app_context)
@@ -160,7 +175,7 @@ class AppService(TDEServiceBase):
                     f"The main content instance for {app_process.APP_NAME} must be a subclass of TDEMainWidget"
                 )
 
-            # Stage 7: Store the main content instance in the dictionary 
+            # Stage 7: Store the main content instance in the dictionary
             self._content_instance_dict[process_id] = content_instance
 
             # Merge the default window settings with any custom settings

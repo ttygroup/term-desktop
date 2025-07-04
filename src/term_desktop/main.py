@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING  # , cast  # , Type #, Any
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
-    from term_desktop.screen.screenbase import TDEScreen
+    from term_desktop.screens.screenbase import TDEScreen
 
 # Textual imports
 from textual import on
@@ -45,7 +45,7 @@ class TermDesktop(App[None]):
     def all_services_started(self) -> None:
 
         self.log.info("All services have been started successfully.")
-        self.services.screen_service.register_mounting_callback(self.push_tde_screen)
+        self.services.screen_service.register_pushing_callback(self.push_tde_screen)
 
         # Main app tells the screen service that its ready to push the main screen now
         self.services.screen_service.push_main_screen()

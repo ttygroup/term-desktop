@@ -6,9 +6,10 @@ from typing import TYPE_CHECKING  # , cast
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
-    from textual.widgets.directory_tree import DirEntry
 
 # # Textual imports
+from textual.widgets import Static
+
 # from textual import on, events  # , work
 # from textual.widgets import (
 #     DirectoryTree,
@@ -21,28 +22,28 @@ if TYPE_CHECKING:
 # from textual_slidecontainer import SlideContainer
 
 # Local imports
-from term_desktop.screen.screenbase import ScreenBase
-from term_desktop.core.shell import Shell
+from term_desktop.screens.screenbase import TDEScreenBase, TDEScreen
+from term_desktop.shell.shellmanager import ShellManager
 
 
-#! All that is left to do is build a MainScreen class (And screen template)
-# And this class will be automatically loaded in and mounted to the main
-# app when the app starts.
-
-
-class MainScreen(ScreenBase):
+class MainScreenMeta(TDEScreenBase):
     """
     The main screen of the Terminal Desktop Environment.
     This screen is responsible for displaying the main content area,
     which includes the shell and other widgets.
     """
 
-    def __init__(self, id: str) -> None:
-        super().__init__(id)
-        self.shell = Shell()
+    SCREEN_ID = "main_screen"
 
-    def build(self) -> ComposeResult:
-        """
-        Build the main screen with the shell widget.
-        """
-        return self.shell.build()
+    def get_screen(self) -> type[TDEScreen]:
+        return MainScreen
+
+
+class MainScreen(TDEScreen):
+
+    def compose(self) -> ComposeResult:
+        yield Static("Main Screen", id="main_screen_title")
+        self.call_after_refresh(self.mount_shell)
+
+    async def mount_shell(self) -> None:
+        await self.mount(ShellManager(self.services))

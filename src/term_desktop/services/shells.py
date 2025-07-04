@@ -22,6 +22,8 @@ class ShellService(TDEServiceBase):
     # ~ Initialzation ~ #
     #####################
 
+    SERVICE_ID = "shell_service"
+
     def __init__(
         self,
         services_manager: ServicesManager,
@@ -30,6 +32,7 @@ class ShellService(TDEServiceBase):
         Initialize the Shell service.
         """
         super().__init__(services_manager)
+        self.validate()
 
     ################
     # ~ Messages ~ #

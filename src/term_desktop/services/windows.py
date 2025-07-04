@@ -25,6 +25,8 @@ class WindowService(TDEServiceBase):
     # ~ Initialzation ~ #
     #####################
 
+    SERVICE_ID = "window_service"
+
     def __init__(
         self,
         services_manager: ServicesManager,
@@ -46,6 +48,7 @@ class WindowService(TDEServiceBase):
         bridge to all the important stuff that we want to do with windows in TDE.
         """
         super().__init__(services_manager)
+        self.validate()
         self.window_manager = window_manager
 
     ################

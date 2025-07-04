@@ -1,4 +1,3 @@
-
 class ShellSession(AceOfBase):
 
     @abstractmethod

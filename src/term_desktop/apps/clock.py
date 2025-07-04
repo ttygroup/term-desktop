@@ -20,7 +20,7 @@ from term_desktop.app_sdk import (
 )
 
 
-class Clock(TDEAppBase):
+class ClockMeta(TDEAppBase):
 
     APP_NAME: str | None = "Clock"
     APP_ID: str | None = "clock"

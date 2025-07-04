@@ -22,6 +22,8 @@ class FileAssociationService(TDEServiceBase):
     # ~ Initialzation ~ #
     #####################
 
+    SERVICE_ID = "file_association_service"
+
     def __init__(
         self,
         services_manager: ServicesManager,
