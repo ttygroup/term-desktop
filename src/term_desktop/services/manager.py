@@ -117,7 +117,7 @@ class ServicesManager(Widget):
         else:
             if not app_service_success:
                 raise RuntimeError("AppService startup returned False after running.")
-            self.log("AppService started successfully.")
+            self.log("AppService started up successfully.")
 
         try:
             assert isinstance(self.app_loader, TDEServiceBase)
@@ -129,7 +129,7 @@ class ServicesManager(Widget):
         else:
             if not app_loader_success:
                 raise RuntimeError("AppLoaderService startup returned False after running.")
-            self.log("AppLoaderService started successfully.")
+            self.log("AppLoaderService started up successfully.")
 
         try:
             assert isinstance(self.window_service, TDEServiceBase)
@@ -141,7 +141,7 @@ class ServicesManager(Widget):
         else:
             if not window_service_success:
                 raise RuntimeError("WindowService startup returned False after running.")
-            self.log("WindowService started successfully.")
+            self.log("WindowService started up successfully.")
 
         try:
             assert isinstance(self.screen_service, TDEServiceBase)
@@ -153,7 +153,7 @@ class ServicesManager(Widget):
         else:
             if not screen_service_success:
                 raise RuntimeError("ScreenService startup returned False after running.")
-            self.log("ScreenService started successfully.")
+            self.log("ScreenService started up successfully.")
 
         try:
             assert isinstance(self.shell_service, TDEServiceBase)
@@ -165,7 +165,7 @@ class ServicesManager(Widget):
         else:
             if not shell_service_success:
                 raise RuntimeError("ShellService startup returned False after running.")
-            self.log("ShellService started successfully.")
+            self.log("ShellService started up successfully.")
 
         self.post_message(self.ServicesStarted())
 

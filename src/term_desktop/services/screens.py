@@ -54,10 +54,12 @@ class ScreenService(TDEServiceBase):
 
     async def start(self) -> bool:
         """Start the Screen service. service."""
+        self.log("Starting Screen service")
         # nothing here yet
         return True
 
     async def stop(self) -> bool:
+        self.log("Stopping Screen service")
         # nothing here yet
         return True
 
