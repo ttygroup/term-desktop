@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 from textual.worker import WorkerError
 
 # Local imports
-import term_desktop.apps
+# import term_desktop.apps
 from term_desktop.app_sdk.appbase import TDEAppBase
 from term_desktop.services.servicebase import TDEServiceBase
 
@@ -36,12 +36,12 @@ class AppLoaderService(TDEServiceBase):
         super().__init__(services_manager)
         self.validate()
 
-        self.directories: list[Path] = []
         self._registered_apps: dict[str, Type[TDEAppBase]] = {}
         self._failed_apps: dict[str, Exception] = {}
 
-        builtin_apps = next(iter(term_desktop.apps.__path__))
-        self.directories.extend([Path(builtin_apps)])
+        spec = importlib.util.find_spec("term_desktop.apps")
+        if spec is not None and spec.submodule_search_locations:
+            self._directories = [Path(next(iter(spec.submodule_search_locations)))]
 
     ################
     # ~ Messages ~ #
@@ -73,6 +73,16 @@ class AppLoaderService(TDEServiceBase):
             dict[str, Exception]: Dictionary mapping app IDs to the exceptions raised during loading.
         """
         return self._failed_apps
+    
+    @property
+    def directories(self) -> list[Path]:
+        """
+        Get the list of directories where apps are searched for.
+
+        Returns:
+            list[Path]: List of directories to search for app files.
+        """
+        return self._directories
 
     async def start(self) -> bool:
         """Start the AppLoader service.
@@ -132,7 +142,7 @@ class AppLoaderService(TDEServiceBase):
         assert isinstance(directory, Path), "directory must be a Path object"
         if not directory.exists():
             raise FileNotFoundError(f"Directory does not exist: {directory}")
-        self.directories.append(directory)
+        self._directories.append(directory)
         self.log.debug(f"Added apps directory: {directory}")
 
     ################

@@ -38,7 +38,7 @@ from term_desktop.common.messages import (
 from term_desktop.shell.desktop import Desktop
 
 # TODO: Shell theme Plugin system here
-from term_desktop.shell.ranger_theme import (
+from term_desktop.shells.ranger_theme import (
     StartMenu,
     AppChooser,
     TaskBar,
