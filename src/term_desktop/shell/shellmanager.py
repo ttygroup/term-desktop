@@ -138,7 +138,7 @@ class ShellManager(Widget):
 
     @on(events.Click)
     async def handle_click(self, event: events.Click):
-        """This method exists to make the start menu close if someone clicks
+        """This method exists to close the start menu if someone clicks
         elsewhere on the screen while it is open"""
 
         start_menu = self.query_one(StartMenu)

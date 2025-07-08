@@ -19,7 +19,9 @@ from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
 # ? ShellService  →  ShellSession (ABC)  →  ShellLayoutManager
 
 
-class TDEShellSession(AceOfBase):
+class TDEShellBase(AceOfBase):
+
+    SHELL_ID: str | None = None
 
     def __init__(self, process_id: str) -> None:
         """The ID is set by the shell service when it initializes the shell session.
@@ -30,17 +32,22 @@ class TDEShellSession(AceOfBase):
         self.process_id = process_id
 
     @abstractmethod
-    def get_shell(self) -> TDEShell:
+    def get_shell(self) -> type[TDEShellSession]:
         """build me"""
         ...
 
     @classmethod
     def validate(cls) -> None:
-        super().validate()
-        # Additional class-specific validation can be added here.
+
+        required_members = {
+            "SCREEN_ID": "class attribute",
+            # more will go here as needed
+        }
+        cls.validate_stage1()
+        cls.validate_stage2(required_members)
 
 
-class TDEShell(Widget):
+class TDEShellSession(Widget):
     """Base class for all shell sessions in TDE. \n
 
     This is the widget that will be mounted in to the main screen of the app

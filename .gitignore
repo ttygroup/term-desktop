@@ -6,6 +6,5 @@ dist/
 wheels/
 *.egg-info
 Thumbs.db
-
-# Virtual environments
 .venv
+*.drawio.bkp

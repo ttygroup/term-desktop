@@ -57,26 +57,16 @@ class FooBase(AceOfBase):
 
     @classmethod
     def validate(cls) -> None:
-        super().validate()
-        # Additional class-specific validation can be added here.
+        cls.validate()
 
-        # This section can be used to add class level attributes that must be
-        # implemented by subclasses.
+        # You can also add class level attributes that must be
+        # implemented by subclasses:
 
         # required_members = {
         #     "FOO_NAME": "class attribute",
         #     "FOO_ID": "class attribute",
-        #     # more will go here as needed
         # }
-
-        # for attr_name, kind in required_members.items():
-        #     try:
-        #         attr = getattr(cls, attr_name)
-        #     except AttributeError:
-        #         raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
-        #     else:
-        #         if attr is None:
-        #             raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+        # cls.validate_stage2(required_members)
 
 
 class TDEWidgetFoo(Widget):

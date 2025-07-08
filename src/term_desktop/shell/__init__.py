@@ -11,7 +11,10 @@ the core desktop environment shell.
 """
 
 from term_desktop.shell.shellmanager import ShellManager
+from term_desktop.shell.shellbase import TDEShellSession, TDEShellBase
 
 __all__ = [
     "ShellManager",
+    "TDEShellSession",
+    "TDEShellBase",
 ]

@@ -214,23 +214,13 @@ class TDEAppBase(AceOfBase):
         but with a warning that it cannot be launched. We can then easily expand that
         to add more information that the user could click on to see what is missing.
         """
-        super().validate()
-
         required_members = {
             "APP_NAME": "class attribute",
             "APP_ID": "class attribute",
             # more will go here as needed
         }
-
-        for attr_name, kind in required_members.items():
-
-            try:
-                attr = getattr(cls, attr_name)
-            except AttributeError:
-                raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
-            else:
-                if attr is None:
-                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+        cls.validate_stage1()
+        cls.validate_stage2(required_members)
 
     @property
     def default_window_settings(cls) -> DefaultWindowSettings:

@@ -83,7 +83,7 @@ class AceOfBase(ABC):
         return log
 
     @classmethod
-    def validate(cls) -> None:
+    def validate_stage1(cls) -> None:
         """High-level validation for the base class.
         Make sure you call `super().validate()` if you override this
         method in a subclass."""
@@ -103,3 +103,16 @@ class AceOfBase(ABC):
                 f"{', '.join(missing)}\n"
                 "Please implement them to make the screen functional."
             )
+        
+    @classmethod        
+    def validate_stage2(cls, required_members: dict[str, str]) -> None:
+
+        for attr_name, kind in required_members.items():
+
+            try:
+                attr = getattr(cls, attr_name)
+            except AttributeError:
+                raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+            else:
+                if attr is None:
+                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")        
