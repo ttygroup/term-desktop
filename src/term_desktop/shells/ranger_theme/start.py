@@ -46,7 +46,7 @@ class StartMenu(SlideContainer):
         yield option_list
 
     def on_mount(self) -> None:
-        self.registered_apps = self.services.app_loader.registered_apps
+        self.registered_apps = self.services.app_service.registered_apps
         self.load_registered_apps(self.registered_apps)
 
     def load_registered_apps(self, registered_apps: dict[str, type[TDEAppBase]]) -> None:

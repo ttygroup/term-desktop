@@ -41,8 +41,16 @@ class MainScreenMeta(TDEScreenBase):
 
 class MainScreen(TDEScreen):
 
-    def on_mount(self) -> None:
-        self.call_after_refresh(self.mount_shell)
 
-    async def mount_shell(self) -> None:
-        await self.mount(ShellManager(self.services))
+    def compose(self) -> ComposeResult:
+
+        try:
+            yield ShellManager(self.services)
+        except Exception as e:
+            yield Static(f"Error mounting shell: {e}", classes="error")
+
+    # def on_mount(self) -> None:
+    #     self.call_after_refresh(self.mount_shell)
+
+    # async def mount_shell(self) -> None:
+    #     await self.mount(ShellManager(self.services))

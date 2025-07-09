@@ -17,7 +17,6 @@ from textual.widget import Widget
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
 from term_desktop.services.apps import AppService
-from term_desktop.services.apploader import AppLoaderService
 from term_desktop.services.windows import WindowService
 from term_desktop.services.screens import ScreenService
 from term_desktop.services.shells import ShellService
@@ -69,7 +68,6 @@ class ServicesManager(Widget):
         # Create instances of the services
         try:
             self.app_service = AppService(self)
-            self.app_loader = AppLoaderService(self)
             self.window_service = WindowService(self)
             self.screen_service = ScreenService(self)
             self.shell_service = ShellService(self)
@@ -79,7 +77,6 @@ class ServicesManager(Widget):
         #! This dictionary isn't used by anything yet.
         self.services_dict: dict[str, type[TDEServiceBase]] = {}
         self.services_dict["app_service"] = AppService
-        self.services_dict["app_loader"] = AppLoaderService
         self.services_dict["window_service"] = WindowService
         self.services_dict["screen_service"] = ScreenService
         self.services_dict["shell_service"] = ShellService
@@ -118,18 +115,6 @@ class ServicesManager(Widget):
             if not app_service_success:
                 raise RuntimeError("AppService startup returned False after running.")
             self.log("AppService started up successfully.")
-
-        try:
-            assert isinstance(self.app_loader, TDEServiceBase)
-            app_loader_success = await self.app_loader.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"AppLoaderService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not app_loader_success:
-                raise RuntimeError("AppLoaderService startup returned False after running.")
-            self.log("AppLoaderService started up successfully.")
 
         try:
             assert isinstance(self.window_service, TDEServiceBase)
