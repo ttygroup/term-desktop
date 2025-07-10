@@ -4,7 +4,7 @@ from abc import ABC  # , abstractmethod
 import enum
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
     from textual import Logger
 
 from textual import log

@@ -1,4 +1,4 @@
-"services_manager.py - The uber manager to manage other managers."
+"manager.py - Uber manager of services."
 
 # python standard library imports
 from __future__ import annotations
@@ -13,6 +13,7 @@ from textual import on
 from textual.message import Message
 from textual.worker import Worker, WorkerState
 from textual.widget import Widget
+from rich.text import Text
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
@@ -32,7 +33,19 @@ class ServicesManager(Widget):
     SERVICE_ID = "services_manager"
 
     class WorkerMeta(TypedDict):
-        "WorkerMeta is required to run work on the ServicesManager."
+        """WorkerMeta is required to run work on the ServicesManager.
+        
+        Required keys:
+        - work: Callable[..., Any]
+        - name: str
+        - service_id: str
+        - group: str
+        - description: str
+        - exit_on_error: bool
+        - start: bool
+        - exclusive: bool
+        - thread: bool
+        """
 
         work: Callable[..., Any]
         name: str
@@ -67,19 +80,19 @@ class ServicesManager(Widget):
 
         # Create instances of the services
         try:
-            self.app_service = AppService(self)
-            self.window_service = WindowService(self)
-            self.screen_service = ScreenService(self)
             self.shell_service = ShellService(self)
+            self.screen_service = ScreenService(self)  
+            self.window_service = WindowService(self)                                  
+            self.app_service = AppService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize services: {str(e)}") from e
 
         #! This dictionary isn't used by anything yet.
         self.services_dict: dict[str, type[TDEServiceBase]] = {}
-        self.services_dict["app_service"] = AppService
-        self.services_dict["window_service"] = WindowService
-        self.services_dict["screen_service"] = ScreenService
         self.services_dict["shell_service"] = ShellService
+        self.services_dict["screen_service"] = ScreenService
+        self.services_dict["window_service"] = WindowService
+        self.services_dict["app_service"] = AppService
 
     # @work(exclusive=True, group="service_manager")
     def start_all_services(self) -> None:
@@ -105,28 +118,16 @@ class ServicesManager(Widget):
         """
 
         try:
-            assert isinstance(self.app_service, TDEServiceBase)
-            app_service_success = await self.app_service.start()
+            assert isinstance(self.shell_service, TDEServiceBase)
+            shell_service_success = await self.shell_service.start()
         except RuntimeError:
             raise
         except Exception as e:
-            raise RuntimeError(f"AppService startup failed with an unexpected error: {str(e)}") from e
+            raise RuntimeError(f"ShellService startup failed with an unexpected error: {str(e)}") from e
         else:
-            if not app_service_success:
-                raise RuntimeError("AppService startup returned False after running.")
-            self.log("AppService started up successfully.")
-
-        try:
-            assert isinstance(self.window_service, TDEServiceBase)
-            window_service_success = await self.window_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"WindowService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not window_service_success:
-                raise RuntimeError("WindowService startup returned False after running.")
-            self.log("WindowService started up successfully.")
+            if not shell_service_success:
+                raise RuntimeError("ShellService startup returned False after running.")
+            self.log("ShellService started up successfully.")
 
         try:
             assert isinstance(self.screen_service, TDEServiceBase)
@@ -141,16 +142,28 @@ class ServicesManager(Widget):
             self.log("ScreenService started up successfully.")
 
         try:
-            assert isinstance(self.shell_service, TDEServiceBase)
-            shell_service_success = await self.shell_service.start()
+            assert isinstance(self.window_service, TDEServiceBase)
+            window_service_success = await self.window_service.start()
         except RuntimeError:
             raise
         except Exception as e:
-            raise RuntimeError(f"ShellService startup failed with an unexpected error: {str(e)}") from e
+            raise RuntimeError(f"WindowService startup failed with an unexpected error: {str(e)}") from e
         else:
-            if not shell_service_success:
-                raise RuntimeError("ShellService startup returned False after running.")
-            self.log("ShellService started up successfully.")
+            if not window_service_success:
+                raise RuntimeError("WindowService startup returned False after running.")
+            self.log("WindowService started up successfully.")
+
+        try:
+            assert isinstance(self.app_service, TDEServiceBase)
+            app_service_success = await self.app_service.start()
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"AppService startup failed with an unexpected error: {str(e)}") from e
+        else:
+            if not app_service_success:
+                raise RuntimeError("AppService startup returned False after running.")
+            self.log("AppService started up successfully.")
 
         self.post_message(self.ServicesStarted())
 
@@ -217,14 +230,14 @@ class ServicesManager(Widget):
         worker = event.worker  # type: ignore (Textual type hinting issue)
 
         if worker.state == WorkerState.RUNNING:
-            self.log(f"Worker {worker.name} is running.")
+            self.log(Text.from_markup(f"[yellow]Worker {worker.name} is running."))
 
             if not self._worker_check_pending:
                 self._worker_check_pending = True
                 self.set_timer(3, self._check_running_workers)
 
         elif worker.state == WorkerState.ERROR:
-            self.log.error(f"Worker {worker.name} encountered an error: {worker.error!r}")
+            self.log.error(Text.from_markup(f"[bold red]Worker {worker.name} encountered an error: {worker.error!r}"))
 
             # In the future this should be replaced by a proper error screen.
             # But this will do for now.
@@ -235,11 +248,10 @@ class ServicesManager(Widget):
             )
 
         elif worker.state == WorkerState.SUCCESS:
-            self.log(f"Worker {worker.name} has completed successfully.")
+            self.log(Text.from_markup(f"[bold green]Worker {worker.name} has completed successfully."))
 
             # Remove the worker from the active workers dict
             worker_id = getattr(worker, "worker_id") # type: ignore (Textual type hinting issue)
-            self.log(f"ACTIVE WORKERS LIST: {self.active_workers}")
             assert worker_id in self.active_workers
             del self.active_workers[worker_id]
 
@@ -259,12 +271,11 @@ class ServicesManager(Widget):
                 at_least_one_from_service_manager = True
                 start_time = cast(float, getattr(worker, "start_time"))
                 elapsed_time = time() - start_time
-                formatted_elapsed = f"{elapsed_time:.2f}"
-                log_string += f"{worker.name}: {worker.state.name} | Elapsed time: {formatted_elapsed}\n"
+                log_string += f"{worker.name}:\n{worker.state.name} | Elapsed time: {elapsed_time:.2f}\n"
 
                 if elapsed_time > 10:
                     self.workers_over_limit[worker_id] = worker
-            self.log(f"Currently running workers:\n{log_string}")
+            self.log(Text.from_markup(f"[bold yellow]Worker Status[/bold yellow]\n{log_string}"))
             
             if at_least_one_from_service_manager:
                 self._worker_check_pending = True

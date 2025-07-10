@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
 
 # Textual imports
 from term_desktop.services.servicebase import TDEServiceBase
@@ -37,8 +37,8 @@ class ServiceTemplate(TDEServiceBase):
     ####################
     # ~ External API ~ #
     ####################
-    # This section is for methods or properties that might need to be
-    # accessed by anything else in TDE, including other services.
+    # Methods that might need to be accessed by
+    # anything else in TDE, including other services.
 
     async def start(self) -> bool:
         """Start the [INSERT SERVICE NAME HERE] service."""
@@ -59,5 +59,5 @@ class ServiceTemplate(TDEServiceBase):
     ################
     # ~ Internal ~ #
     ################
-    # This section is for methods that are only used internally
+    # Methods that are only used inside this service.
     # These should be marked with a leading underscore.

@@ -1,4 +1,7 @@
-"term-desktop"
+"mainscreen.py"
+
+#! NOT A TEMPLATE
+#! FINISH ME
 
 # python standard library imports
 from __future__ import annotations
@@ -6,9 +9,10 @@ from typing import TYPE_CHECKING  # , cast
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
-    from textual.widgets.directory_tree import DirEntry
 
 # # Textual imports
+from textual.widgets import Static
+
 # from textual import on, events  # , work
 # from textual.widgets import (
 #     DirectoryTree,
@@ -21,38 +25,34 @@ if TYPE_CHECKING:
 # from textual_slidecontainer import SlideContainer
 
 # Local imports
-from term_desktop.screens.screenbase import ScreenBase
-from term_desktop.core.shell import Shell
+from term_desktop.screens.screenbase import TDEScreenBase, TDEScreen
 
 
-class ShellSession(AceOfBase):
-
-    @abstractmethod
-    def get_layout(self) -> ShellManager:
-        """Returns the main shell layout widget to mount on screen."""
-
-    @abstractmethod
-    def session_id(self) -> str:
-        """Returns a unique identifier for this shell session."""
-
-    def on_enter(self) -> None:
-        """Called when this shell session becomes active."""
-
-    def on_exit(self) -> None:
-        """Called before this session is replaced or terminated."""
-
-
-class TDEShellSession:
+class MainScreenMeta(TDEScreenBase):
     """
-    Terminal Desktop Environment Shell Session.
-    This class implements the ShellSession interface for the TDE.
-    It provides methods to get the shell layout and session ID.
+    The main screen of the Terminal Desktop Environment.
+    This screen is responsible for displaying the main content area,
+    which includes the shell and other widgets.
     """
 
-    def get_layout(self) -> ShellManager:
-        """Returns the main shell layout widget to mount on screen."""
-        return ShellManager()
+    SCREEN_ID = "main_screen"
 
-    def session_id(self) -> str:
-        """Returns a unique identifier for this shell session."""
-        return "tde_shell_session"
+    def get_screen(self) -> type[TDEScreen]:
+        return MainScreen
+
+
+class MainScreen(TDEScreen):
+
+
+    def compose(self) -> ComposeResult:
+
+        try:
+            yield ShellManager(self.services)
+        except Exception as e:
+            yield Static(f"Error mounting shell: {e}", classes="error")
+
+    # def on_mount(self) -> None:
+    #     self.call_after_refresh(self.mount_shell)
+
+    # async def mount_shell(self) -> None:
+    #     await self.mount(ShellManager(self.services))

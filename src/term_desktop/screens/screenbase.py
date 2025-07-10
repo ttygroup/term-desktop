@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
 
     # from term_desktop.app_sdk import AppContext
     # from textual.window import Window
@@ -19,6 +19,7 @@ from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
 
 
 class TDEScreenBase(AceOfBase):
+    """Base class for screens in TDE apps."""
 
     ################
     # ~ CONTRACT ~ #
@@ -53,12 +54,22 @@ class TDEScreenBase(AceOfBase):
 
 
 class TDEScreen(Screen[None]):
-    """Base class for all screens in TDE apps. \n
+    """Base class for screens in TDE apps. \n
 
-    Screens must inherit from this class to be allowed to be mounted
-    into the TDE.
+    Screens must inherit from this class to be accepted by the screen service.
 
-    #! NOTES HERE
+    Note that this is for full-screen applications intended to be used with
+    the TDEScreenBase class above. So far this is intended to be used for
+    2 things:
+    - Application screens that have a full-screen mode.
+    - Built in screens that are used by TDE itself, such as the main screen,
+      boot screen, and so on.
+
+    Sometimes apps, widgets, or other screens may want to push smaller
+    sreens themselves. Often for things like dialogs and popups.
+    It wouldn't really be practical at the moment to try to enforce a contract
+    on every single one of those, so this is not a requirement just to push
+    a screen in general. How enforced this is will be subject to change in the future.
     """
 
     class Initialized(Message):

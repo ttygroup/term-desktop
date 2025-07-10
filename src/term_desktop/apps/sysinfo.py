@@ -36,6 +36,7 @@ class SysInfoMeta(TDEAppBase):
     APP_ID = "sysinfo"
     ICON = "🛈"
     DESCRIPTION = "View static system info such as OS, CPU, UID/GID, etc."
+    APP_AUTHOR = "TDE Team"
 
     def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n

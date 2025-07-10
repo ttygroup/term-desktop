@@ -1,4 +1,7 @@
-"processes.py - The app service for handling processes in TDE."
+"""apps.py - The app service for handling apps in TDE.
+
+Note that this file is very similar to the `services/shells.py` file, as they both
+use the same dynamic loading mechanism to scan for either apps or shells."""
 
 # python standard library imports
 from __future__ import annotations
@@ -6,22 +9,22 @@ from typing import TYPE_CHECKING # , Any
 import os
 import importlib.util
 from pathlib import Path
+import asyncio
 
 if TYPE_CHECKING:
-    # from textual.worker import Worker
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
 
 # Textual imports
 from textual.worker import WorkerError
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
-from term_desktop.app_sdk import LaunchMode
 from term_desktop.aceofbase import ProcessContext, ProcessType
+from term_desktop.app_sdk import LaunchMode
 from term_desktop.app_sdk.appbase import (
     TDEAppBase,
-    DefaultWindowSettings,
     TDEMainWidget,
+    DefaultWindowSettings,    
 )
 
 
@@ -71,7 +74,7 @@ class AppService(TDEServiceBase):
 
         - Function is pure: [no]"""
 
-        self.log("Starting AppLoader service")
+        self.log("Starting App service")
         self._failed_apps.clear()
 
         worker_meta: ServicesManager.WorkerMeta = {
@@ -114,8 +117,8 @@ class AppService(TDEServiceBase):
     ####################
     # ~ External API ~ #
     ####################
-    # This section is for methods or properties that might need to be
-    # accessed by anything else in TDE, including other services.
+    # Methods that might need to be accessed by
+    # anything else in TDE, including other services.
 
     @property
     def registered_apps(self) -> dict[str, type[TDEAppBase]]:
@@ -172,19 +175,7 @@ class AppService(TDEServiceBase):
             self.log.error(f"Invalid app class: {TDE_App.__name__} is not a subclass of TDEAppBase")
             raise TypeError(f"{TDE_App.__name__} is not a valid TDEAppBase subclass")
 
-        assert TDE_App.APP_NAME is not None
-        worker_meta: ServicesManager.WorkerMeta = {
-            "work": self._launch_app,
-            "name": "LaunchAppWorker-" + TDE_App.APP_NAME,
-            "service_id": self.SERVICE_ID,
-            "group": self.SERVICE_ID,
-            "description": "Launch app " + TDE_App.APP_NAME,
-            "exit_on_error": False,
-            "start": True,
-            "exclusive": False,  # This is not an exclusive worker, multiple apps can be launched at once
-            "thread": False,
-        }
-        self.run_worker(TDE_App, worker_meta=worker_meta)
+        asyncio.create_task(self._launch_app_runner(TDE_App))
 
     def add_directory(self, directory: Path) -> None:
         """
@@ -204,8 +195,27 @@ class AppService(TDEServiceBase):
     ################
     # ~ Internal ~ #
     ################
-    # This section is for methods that are only used internally
     # These should be marked with a leading underscore.
+
+    async def _launch_app_runner(self, TDE_App: type[TDEAppBase]) -> None:
+
+        assert TDE_App.APP_NAME is not None
+        worker_meta: ServicesManager.WorkerMeta = {
+            "work": self._launch_app,
+            "name": "LaunchAppWorker-" + TDE_App.APP_NAME,
+            "service_id": self.SERVICE_ID,
+            "group": self.SERVICE_ID,
+            "description": "Launch app " + TDE_App.APP_NAME,
+            "exit_on_error": False,
+            "start": True,
+            "exclusive": False,  # This is not an exclusive worker, multiple apps can be launched at once
+            "thread": False,
+        }
+        worker = self.run_worker(TDE_App, worker_meta=worker_meta)
+        try:
+            await worker.wait()
+        except WorkerError:
+            self.log.error(f"Failed to launch app {TDE_App.APP_NAME}")
 
     async def _launch_app(self, TDE_App: type[TDEAppBase]) -> None:
         """
@@ -261,7 +271,7 @@ class AppService(TDEServiceBase):
 
             # Stage 6: Create the main content instance
             try:
-                content_instance = main_content(app_context)
+                content_instance = main_content(process_context=app_context)
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to create main content instance for {app_process.APP_NAME}: {e}"
@@ -313,7 +323,6 @@ class AppService(TDEServiceBase):
     async def _discover_apps(self, directories: list[Path]) -> dict[str, type[TDEAppBase]]:
         """
         Scan the provided app directories for apps and attempt to load them.
-        Called by AppLoader.start() (above)
 
         Args:
             directories (list[Path]): List of directories to search for app files.
@@ -403,7 +412,6 @@ class AppService(TDEServiceBase):
     def _load_app_class(self, path: Path, file_or_dir: str) -> type[TDEAppBase]:
         """
         Load an app class from a given path.
-        Called by AppLoader._discover_apps (above)
 
         Args:
             path (Path): Path to the app file.
