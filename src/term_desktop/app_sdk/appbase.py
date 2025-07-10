@@ -7,7 +7,7 @@ from abc import abstractmethod
 from enum import Enum
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
     from textual_window.window import Window, STARTING_HORIZONTAL, STARTING_VERTICAL, MODE, WindowStylesDict
 
 # Textual imports

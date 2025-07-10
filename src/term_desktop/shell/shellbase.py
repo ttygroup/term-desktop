@@ -5,7 +5,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Iterable #, Any
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
     from textual.app import ComposeResult
     # from textual.screen import Screen    
     from textual.widgets.directory_tree import DirEntry

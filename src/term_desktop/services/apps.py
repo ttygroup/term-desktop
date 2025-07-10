@@ -12,7 +12,7 @@ from pathlib import Path
 import asyncio
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
 
 # Textual imports
 from textual.worker import WorkerError
