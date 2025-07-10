@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
-Thumbs.db
+**/Thumbs.db
+**/thumbs.db
 .venv
 *.drawio.bkp
