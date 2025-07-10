@@ -1,10 +1,10 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
   <diagram id="zcJRYihM3TNGGiDN9ozP" name="Page-1">
-    <mxGraphModel dx="719" dy="437" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="595" dy="362" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="e6hvxNlIzSLK3bhziamK-230" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+        <mxCell id="e6hvxNlIzSLK3bhziamK-230" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;" parent="1" vertex="1">
           <mxGeometry x="130" y="280" width="500" height="630" as="geometry" />
         </mxCell>
         <mxCell id="33" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;" parent="1" vertex="1">
@@ -127,10 +127,7 @@
         <mxCell id="94" value="Shell Service" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="379.81" y="530" width="50" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="98" value="" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="492.5" y="379.15000000000003" width="53.5" height="60.28" as="geometry" />
-        </mxCell>
-        <mxCell id="100" value="" style="endArrow=ERzeroToMany;dashed=1;html=1;endFill=0;entryX=0.84;entryY=0.001;entryDx=0;entryDy=0;strokeWidth=1;startArrow=ERzeroToOne;startFill=0;entryPerimeter=0;exitX=0.179;exitY=1.004;exitDx=0;exitDy=0;exitPerimeter=0;fillColor=none;" parent="1" source="60" target="94" edge="1">
+        <mxCell id="100" value="" style="endArrow=ERzeroToMany;dashed=1;html=1;endFill=0;entryX=0.84;entryY=0.001;entryDx=0;entryDy=0;strokeWidth=1;startArrow=ERzeroToOne;startFill=0;entryPerimeter=0;exitX=0.086;exitY=0.999;exitDx=0;exitDy=0;fillColor=none;exitPerimeter=0;" parent="1" source="60" target="94" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="430" y="470" as="sourcePoint" />
             <mxPoint x="395.95000000000005" y="540" as="targetPoint" />
@@ -220,11 +217,10 @@
             <mxPoint x="29.810000000000002" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="153" value="" style="endArrow=ERzeroToMany;dashed=1;html=1;endFill=0;exitX=0.903;exitY=1;exitDx=0;exitDy=0;entryX=0.603;entryY=-0.002;entryDx=0;entryDy=0;strokeWidth=1;entryPerimeter=0;exitPerimeter=0;startArrow=ERzeroToOne;startFill=0;fillColor=none;" parent="1" source="16" target="115" edge="1">
+        <mxCell id="153" value="" style="endArrow=ERzeroToMany;dashed=1;html=1;endFill=0;exitX=0.85;exitY=1.01;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;strokeWidth=1;startArrow=ERzeroToOne;startFill=0;fillColor=none;exitPerimeter=0;" parent="1" source="125" target="115" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="570" y="350" as="sourcePoint" />
             <mxPoint x="576" y="429" as="targetPoint" />
-            <Array as="points" />
           </mxGeometry>
         </mxCell>
         <mxCell id="160" value="&lt;h3&gt;Userland&lt;/h3&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=none;" parent="1" vertex="1">
@@ -301,16 +297,28 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="182" value="" style="group;fillColor=none;" parent="1" vertex="1" connectable="0">
-          <mxGeometry x="410" y="379.15000000000003" width="69.99999999999994" height="89.70999999999998" as="geometry" />
+          <mxGeometry x="405" y="375" width="199" height="114.57" as="geometry" />
         </mxCell>
         <mxCell id="60" value="" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=none;" parent="182" vertex="1">
-          <mxGeometry width="70" height="89.71" as="geometry" />
+          <mxGeometry width="199" height="94" as="geometry" />
         </mxCell>
-        <mxCell id="125" value="Shell" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=none;" parent="182" vertex="1">
-          <mxGeometry x="10" y="11.33" width="50" height="35" as="geometry" />
+        <mxCell id="125" value="" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=none;" parent="182" vertex="1">
+          <mxGeometry x="4" y="4" width="192" height="61" as="geometry" />
         </mxCell>
         <mxCell id="155" value="Shell Manager" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fillColor=none;" parent="182" vertex="1">
-          <mxGeometry x="6.779999999999973" y="53.829999999999984" width="56.44" height="32.5" as="geometry" />
+          <mxGeometry x="69" y="66.14" width="91" height="27.86" as="geometry" />
+        </mxCell>
+        <mxCell id="E7djAsSUpNhthVeq93sm-232" value="Desktop" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;" vertex="1" parent="182">
+          <mxGeometry x="11" y="14" width="49" height="39" as="geometry" />
+        </mxCell>
+        <mxCell id="E7djAsSUpNhthVeq93sm-233" value="Shell" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fillColor=none;" vertex="1" parent="182">
+          <mxGeometry x="81.5" y="25.5" width="36" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="197" value="&lt;h3&gt;&lt;span style=&quot;font-weight: normal;&quot;&gt;Main Screen&lt;/span&gt;&lt;/h3&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=none;" parent="182" vertex="1">
+          <mxGeometry x="69" y="98" width="91" height="16.57" as="geometry" />
+        </mxCell>
+        <mxCell id="221" value="TDE App Windows" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;" parent="182" vertex="1">
+          <mxGeometry x="132" y="14" width="54.5" height="38.14" as="geometry" />
         </mxCell>
         <mxCell id="186" value="" style="shape=actor;whiteSpace=wrap;html=1;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="430" y="289.43" width="40" height="60" as="geometry" />
@@ -434,17 +442,12 @@
         <mxCell id="195" value="Start All Services" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=5;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="355" y="492.43" width="30.19" height="10" as="geometry" />
         </mxCell>
-        <mxCell id="192" style="edgeStyle=none;html=1;dashed=1;endArrow=oval;endFill=0;exitX=1.001;exitY=0.539;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;fillColor=none;" parent="1" source="125" target="114" edge="1">
+        <mxCell id="192" style="edgeStyle=none;html=1;dashed=1;endArrow=oval;endFill=0;exitX=0.315;exitY=0.997;exitDx=0;exitDy=0;entryX=0.394;entryY=0.005;entryDx=0;entryDy=0;fillColor=none;entryPerimeter=0;exitPerimeter=0;" parent="1" source="125" target="114" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="545.63" y="469.43" as="targetPoint" />
             <mxPoint x="485.63" y="469.43" as="sourcePoint" />
-            <Array as="points">
-              <mxPoint x="488" y="410" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
-        </mxCell>
-        <mxCell id="197" value="&lt;h3&gt;&lt;span style=&quot;font-weight: normal;&quot;&gt;Main Screen&lt;/span&gt;&lt;/h3&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="540" y="449.43" width="50" height="27.57" as="geometry" />
         </mxCell>
         <mxCell id="199" style="edgeStyle=none;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;dashed=1;endArrow=diamond;endFill=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=none;" parent="1" source="114" target="115" edge="1">
           <mxGeometry relative="1" as="geometry">
@@ -467,13 +470,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="215" value="Launch App" style="text;html=1;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;rotation=0;fontSize=6;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="462.31" y="512" width="25" height="15" as="geometry" />
-        </mxCell>
-        <mxCell id="220" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255)); font-weight: normal;&quot;&gt;Desktop&lt;/font&gt;&lt;/h1&gt;&lt;p&gt;&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;- Background&lt;/font&gt;&lt;/p&gt;&lt;p&gt;&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;- Icons&lt;/font&gt;&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fontSize=6;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="494.08" y="382.29" width="55.92" height="53.72" as="geometry" />
-        </mxCell>
-        <mxCell id="221" value="TDE App Windows" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="551" y="379.15000000000003" width="54.5" height="60.28" as="geometry" />
+          <mxGeometry x="468" y="512" width="25" height="15" as="geometry" />
         </mxCell>
         <mxCell id="223" value="TDE App&lt;br&gt;Screens" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="290" y="368.86" width="96.06" height="60" as="geometry" />
