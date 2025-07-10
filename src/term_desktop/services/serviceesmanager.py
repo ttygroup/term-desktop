@@ -69,14 +69,23 @@ class ServicesManager(Widget):
         # display = False to make this a non-visible background widget.
         self.display = False
 
-        # active_workers is a dict that maps
+        # _active_workers is a dict that maps
         # worker IDs to tuples of (worker name, service ID, start time)        
-        self.active_workers: dict[str, tuple[str, str, float]] = {}
-        self._worker_check_pending = False
+        self._active_workers: dict[str, tuple[str, str, float]] = {}
 
         # Note that Textual's built in Worker Manager also keeps an internal list of workers,
         # but this is needed to let us track workers by other metrics, such as start time
         # or the service it belongs to.
+
+        # The secondary worker stastus dict is only used to track which workers are
+        # currently running for logging purposes. It doesn't have any purpose outside of
+        # console log messages. Its only here because it was inconvenient
+        # to try to cram it into the _active_workers dict.
+        self._actively_running_workers: dict[str, WorkerState] = {}
+
+        # This is a debounce flag to prevent
+        # _check_running_workers from being called too frequently:
+        self._worker_check_pending = False
 
         # Create instances of the services
         try:
@@ -216,7 +225,7 @@ class ServicesManager(Widget):
         service_id = worker_meta["service_id"]
         worker_id = f"{id(worker)}"
         start_time = time()
-        self.active_workers[worker_id] = (worker_meta["name"], service_id, start_time)        
+        self._active_workers[worker_id] = (worker_meta["name"], service_id, start_time)
 
         # These attributes are assigned directly onto the worker instance:
         setattr(worker, "service_id", service_id)
@@ -227,10 +236,18 @@ class ServicesManager(Widget):
     @on(Worker.StateChanged)
     def worker_state_changed(self, event: Worker.StateChanged) -> None:
 
-        worker = event.worker  # type: ignore (Textual type hinting issue)
+        worker = event.worker  #                          type: ignore (Textual type hinting issue)
+        worker_id = getattr(worker, "worker_id", None)  # type: ignore (Textual type hinting issue)
+        assert worker_id is not None, "Worker must have a worker_id attribute."
+        if worker.state != WorkerState.RUNNING:
+            # Remove the worker from the actively running workers dict
+            if worker_id in self._actively_running_workers:
+                del self._actively_running_workers[worker_id]
 
         if worker.state == WorkerState.RUNNING:
-            self.log(Text.from_markup(f"[yellow]Worker {worker.name} is running."))
+            if worker_id not in self._actively_running_workers:
+                self.log(Text.from_markup(f"[yellow]Worker {worker.name} is running."))
+                self._actively_running_workers[worker_id] = worker.state
 
             if not self._worker_check_pending:
                 self._worker_check_pending = True
@@ -246,14 +263,15 @@ class ServicesManager(Widget):
                 severity="error",
                 timeout=8,
             )
+            del self._active_workers[worker_id]
 
         elif worker.state == WorkerState.SUCCESS:
             self.log(Text.from_markup(f"[bold green]Worker {worker.name} has completed successfully."))
 
             # Remove the worker from the active workers dict
             worker_id = getattr(worker, "worker_id") # type: ignore (Textual type hinting issue)
-            assert worker_id in self.active_workers
-            del self.active_workers[worker_id]
+            assert worker_id in self._active_workers
+            del self._active_workers[worker_id]
 
     def _check_running_workers(self) -> None:
         """Check if any workers are still running and log their status."""
@@ -275,16 +293,19 @@ class ServicesManager(Widget):
 
                 if elapsed_time > 10:
                     self.workers_over_limit[worker_id] = worker
-            self.log(Text.from_markup(f"[bold yellow]Worker Status[/bold yellow]\n{log_string}"))
             
             if at_least_one_from_service_manager:
+                self.log(Text.from_markup(f"[bold yellow]Worker Status[/bold yellow]\n{log_string}"))
                 self._worker_check_pending = True
                 self.set_timer(3, self._check_running_workers)
+            else:
+                self.log("No active workers on the Services Manager.")             
+            return
 
         if self.workers_over_limit:
             for worker in self.workers_over_limit.values():
                 self.log.error(f"Worker {worker.name} has exceeded the time limit")
                 worker.cancel()
+            return
         
-        else:
-            self.log("No workers are currently running.")
+        self.log("No active workers on the Services Manager.")
