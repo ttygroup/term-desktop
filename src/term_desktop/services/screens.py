@@ -1,15 +1,15 @@
-"servicetemplate.py - Template for services. Replace this with description."
+"screens.py - The screen service for handling screens in TDE."
 
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Awaitable
+import asyncio
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
-    from term_desktop.screens import TDEScreen
+    from term_desktop.services.serviceesmanager import ServicesManager
 
 # Textual imports
-# from textual.message import Message
+from textual.worker import WorkerError
 
 # Textual library imports
 # none
@@ -21,6 +21,11 @@ from term_desktop.screens import MainScreenMeta, TDEScreenBase, TDEScreen
 
 
 class ScreenService(TDEServiceBase):
+
+    ################
+    # ~ Messages ~ #
+    ################
+    # None yet
 
     #####################
     # ~ Initialzation ~ #
@@ -42,24 +47,25 @@ class ScreenService(TDEServiceBase):
         self._pushing_callback: Callable[[TDEScreen], Awaitable[None]] | None = None
 
     ################
-    # ~ Messages ~ #
+    # ~ Contract ~ #
     ################
-    # None yet
-
-    ####################
-    # ~ External API ~ #
-    ####################
-    # This section is for methods or properties that might need to be
-    # accessed by anything else in TDE, including other services.
 
     async def start(self) -> bool:
         """Start the Screen service. service."""
+        self.log("Starting Screen service")
         # nothing here yet
         return True
 
     async def stop(self) -> bool:
+        self.log("Stopping Screen service")
         # nothing here yet
         return True
+
+    ####################
+    # ~ External API ~ #
+    ####################
+    # Methods that might need to be accessed by
+    # anything else in TDE, including other services.
 
     def push_main_screen(self) -> None:
         """Push the main screen onto the screen stack using the registered
@@ -116,6 +122,7 @@ class ScreenService(TDEServiceBase):
             ValueError: If TDE_Screen has no SCREEN_ID defined.
             RuntimeError: If a process with the given ID already exists.
         """
+        self.log(f"Screen process requesting push: {TDE_Screen.SCREEN_ID}")
 
         # Stage 0: Validate
         if not issubclass(TDE_Screen, TDEScreenBase):  # type: ignore[unused-ignore]
@@ -125,18 +132,7 @@ class ScreenService(TDEServiceBase):
             self.log.error(f"Invalid screen class: {TDE_Screen.__name__} has no SCREEN_ID defined.")
             raise ValueError(f"{TDE_Screen.__name__} has no SCREEN_ID defined.")
 
-        worker_meta: ServicesManager.WorkerMeta = {
-            "work": self._push_screen,
-            "name": f"PushScreenWorker-{TDE_Screen.SCREEN_ID}",
-            "service_id": self.SERVICE_ID,
-            "group": self.SERVICE_ID,
-            "description": f"Push screen {TDE_Screen.SCREEN_ID} onto the screen stack.",
-            "exit_on_error": False,
-            "start": True,
-            "exclusive": True,  # only 1 screen push allowed at a time
-            "thread": False,
-        }
-        self.run_worker(TDE_Screen, worker_meta=worker_meta)
+        asyncio.create_task(self._push_screen_runner(TDE_Screen))
 
     #! Not used by anything yet
     async def dismiss_screen(
@@ -159,8 +155,29 @@ class ScreenService(TDEServiceBase):
     ################
     # ~ Internal ~ #
     ################
-    # This section is for methods that are only used internally
     # These should be marked with a leading underscore.
+
+    async def _push_screen_runner(
+        self,
+        TDE_Screen: type[TDEScreenBase],
+    ) -> None:
+
+        worker_meta: ServicesManager.WorkerMeta = {
+            "work": self._push_screen,
+            "name": f"PushScreenWorker-{TDE_Screen.SCREEN_ID}",
+            "service_id": self.SERVICE_ID,
+            "group": self.SERVICE_ID,
+            "description": f"Push screen {TDE_Screen.SCREEN_ID} onto the screen stack.",
+            "exit_on_error": False,
+            "start": True,
+            "exclusive": True,  # only 1 screen push allowed at a time
+            "thread": False,
+        }  
+        worker = self.run_worker(TDE_Screen, worker_meta=worker_meta)
+        try:
+            await worker.wait()
+        except WorkerError:
+            self.log.error(f"Failed to push screen {TDE_Screen.SCREEN_ID}")
 
     async def _push_screen(self, TDE_Screen: type[TDEScreenBase]) -> None:
         """
@@ -175,7 +192,6 @@ class ScreenService(TDEServiceBase):
             AssertionError: If the TDE_Screen is not valid (should never happen)
             RuntimeError: If a process with the given ID already exists.
         """
-        self.log(f"Screen process requesting push: {TDE_Screen.SCREEN_ID}")
 
         # Stage 0: Validate
         if self._pushing_callback is None:
@@ -220,7 +236,7 @@ class ScreenService(TDEServiceBase):
 
         # Stage 6: Create the screen instance
         try:
-            screen_instance = tde_screen(screen_context)
+            screen_instance = tde_screen(process_context=screen_context)
         except Exception as e:
             raise RuntimeError(f"Failed to create screen instance for {TDE_Screen.SCREEN_ID}: {e}") from e
 
@@ -235,3 +251,5 @@ class ScreenService(TDEServiceBase):
                 f"Error while executing callback '{self._pushing_callback}' "
                 f"for screen '{TDE_Screen.__class__.__name__}': {e}"
             ) from e
+
+        screen_instance.post_initialized()

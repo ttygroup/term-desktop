@@ -7,7 +7,7 @@ from abc import abstractmethod
 from enum import Enum
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
     from textual_window.window import Window, STARTING_HORIZONTAL, STARTING_VERTICAL, MODE, WindowStylesDict
 
 # Textual imports
@@ -75,10 +75,11 @@ class TDEAppBase(AceOfBase):
 
     APP_NAME: str | None = None
     APP_ID: str | None = None
+    APP_AUTHOR: str | None = None
 
     @abstractmethod
     def launch_mode(self) -> LaunchMode:
-        """Returns the launch mode for the app. \n
+        """Returns the launch mode for the app.
 
         Must return one of the `LaunchMode` enum values.
         """
@@ -86,27 +87,27 @@ class TDEAppBase(AceOfBase):
 
     @abstractmethod
     def get_main_content(self) -> type[TDEMainWidget] | None:
-        """Returns the class definiton for the main content widget for the app. \n
+        """Returns the class definiton for the main content widget for the app.
         Must return a definition of a Widget subclass, not an instance of it.
 
         If the TDEapp is a normal app (runs in a window or full screen), this must return
         the main content Widget for your app. If the TDEapp is a daemon, this method must
         return None.
 
-        #! SUPPORT FOR FULLSCREEN AND DAEMON APPS IS NOT YET IMPLEMENTED. \n
+        #! SUPPORT FOR FULLSCREEN AND DAEMON APPS IS NOT YET IMPLEMENTED.
         """
         raise NotImplementedError("Subclasses must implement the main_content @staticmethod.")
 
     @abstractmethod
     def window_styles(self) -> WindowStylesDict:
-        """Returns a dictionary of styles to be applied to the window. \n
+        """Returns a dictionary of styles to be applied to the window.
 
         Note that although you can set styles within your own main content widget (app)
         using the `CSS` class variable as described above and in the SDK (doesn't exist yet),
         you cannot set styles for the window itself.
         Window instances are created and handled by TDE's Window Service. In order to
         set styles for the window itself, you must put them in the dictionary
-        returned by this method. \n
+        returned by this method.
 
         Provide your custom styles for the window.
         This dictionary is passed into the `styles_dict` parameter of the Window class
@@ -114,7 +115,7 @@ class TDEAppBase(AceOfBase):
         would be used in the library if it was imported into a regular Textual app.
 
         This dictionary is quite bare-bones at the moment, but it can be expanded
-        in the future to accept more styles as needed. \n
+        in the future to accept more styles as needed.
         """
         # These settings shown reflect the same default settings that are used
         # by the Textual-Window library for a Window instance. You can see these same
@@ -138,7 +139,7 @@ class TDEAppBase(AceOfBase):
     DESCRIPTION: str = ""
 
     def custom_window_settings(self) -> CustomWindowSettings:
-        """Returns the settings for the window to be created. \n
+        """Returns the settings for the window to be created.
 
         This method can be optionally overridden to provide custom window settings.
         """
@@ -153,7 +154,7 @@ class TDEAppBase(AceOfBase):
         }
 
     def custom_window_mounts(self) -> CustomWindowMounts:
-        """Returns a dictionary of custom mounts to be added to the window. \n
+        """Returns a dictionary of custom mounts to be added to the window.
 
         This method can be optionally overridden to provide custom mounts for the window.
         """
@@ -199,38 +200,29 @@ class TDEAppBase(AceOfBase):
 
     @classmethod
     def validate(cls) -> None:
-        """Run by the AppLoader Service to validate that apps meet the contract. \n
+        """Run by the App Service to validate that apps meet the contract.
 
         APP_ID and APP_NAME are required to even register the app. If they are not set,
         the app won't even show up in the start menu / loader service.
 
         After that, if any of the abstract methods are not implemented,
         the class will be marked as BROKEN and MISSING_METHODS will contain the set of
-        missing abstract methods. \n
-        This is used by the AppLoader service to determine if the app can be launched or not
+        missing abstract methods.
+        This is used by the App service to determine if the app can be launched or not
         and to provide feedback to the user in the start menu / app loader screen.
 
         If the app is broken, it will still be registered and shown in the start menu,
         but with a warning that it cannot be launched. We can then easily expand that
         to add more information that the user could click on to see what is missing.
         """
-        super().validate()
-
         required_members = {
             "APP_NAME": "class attribute",
             "APP_ID": "class attribute",
+            "APP_AUTHOR": "class attribute",
             # more will go here as needed
         }
-
-        for attr_name, kind in required_members.items():
-
-            try:
-                attr = getattr(cls, attr_name)
-            except AttributeError:
-                raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
-            else:
-                if attr is None:
-                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+        cls.validate_stage1()
+        cls.validate_stage2(required_members)
 
     @property
     def default_window_settings(cls) -> DefaultWindowSettings:
@@ -261,11 +253,13 @@ class TDEAppBase(AceOfBase):
 
 
 class TDEMainWidget(Widget):
-    """Base class for all main content widgets in TDE apps. \n
+    """Base class for all main content widgets in TDE apps.
 
     This is the widget that will be mounted in the window when the app is launched.
     Any Textual apps being converted into TDE apps should consider
-    this as being the equivalent of the main App class. \n
+    this as being the equivalent of the main App class.
+
+    #! NOTE: NOT FOR SCREENS, STILL NEED TO BUILD SUPPORT FOR THEM.
 
     The app_context is passed in by the Process Manager when it initializes the app.
     """
@@ -277,8 +271,17 @@ class TDEMainWidget(Widget):
             super().__init__()
             self.window = window
 
-    def __init__(self, process_context: ProcessContext, **kwargs: Any):
-        super().__init__(**kwargs)
+
+    def __init__(self, process_context: ProcessContext):
+        """The process context is passed in by the Process Manager when it initializes the app.
+        It contains the process type, process ID, process UID, and services manager.
+        
+        If you override this method, you must have an argument named `process_context`
+        which you pass into the super constructor:
+        ```
+        super().__init__(process_context=process_context, **kwargs)
+        ```"""
+        super().__init__()
         self._process_context = process_context
 
     @property
@@ -302,7 +305,7 @@ class TDEMainWidget(Widget):
         It is used to post the Initialized message to the app's main content widget.
 
         This message can be listened to by a TDEapp's main content widget
-        to perform any additional setup after the window is mounted and ready to go. \n
+        to perform any additional setup after the window is mounted and ready to go.
         """
         self.post_message(self.Initialized(window))
         # This is where you can do any additional setup after the window is mounted.

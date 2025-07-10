@@ -1,11 +1,11 @@
-"windows.py - The window manager service for the Terminal Desktop Environment (TDE)."
+"windows.py - The window service for handling windows in TDE."
 
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Awaitable, cast  # , Any
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
     from term_desktop.app_sdk import TDEMainWidget, DefaultWindowSettings, CustomWindowMounts
 
 # Textual imports
@@ -59,11 +59,9 @@ class WindowService(TDEServiceBase):
     ################
     # None yet
 
-    ####################
-    # ~ External API ~ #
-    ####################
-    # This section is for methods that might need to be accessed by
-    # anything else in TDE, including other services.
+    ################
+    # ~ Contract ~ #
+    ################
 
     async def start(self) -> bool:
         self.log("Starting Window service")
@@ -74,6 +72,12 @@ class WindowService(TDEServiceBase):
         self.log("Stopping Window service")
         # nothing to do here yet
         return True
+
+    ####################
+    # ~ External API ~ #
+    ####################
+    # Methods that might need to be accessed by
+    # anything else in TDE, including other services.
 
     def register_mounting_callback(
         self,

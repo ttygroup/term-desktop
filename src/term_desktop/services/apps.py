@@ -1,27 +1,39 @@
-"processes.py - The app service for handling processes in TDE."
+"""apps.py - The app service for handling apps in TDE.
+
+Note that this file is very similar to the `services/shells.py` file, as they both
+use the same dynamic loading mechanism to scan for either apps or shells."""
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING  # , Any
+from typing import TYPE_CHECKING # , Any
+import os
+import importlib.util
+from pathlib import Path
+import asyncio
 
 if TYPE_CHECKING:
-    # from textual.worker import Worker
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
 
 # Textual imports
-# from textual.worker import WorkerError
+from textual.worker import WorkerError
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
-from term_desktop.app_sdk import LaunchMode
 from term_desktop.aceofbase import ProcessContext, ProcessType
+from term_desktop.app_sdk import LaunchMode
 from term_desktop.app_sdk.appbase import (
     TDEAppBase,
-    DefaultWindowSettings,
     TDEMainWidget,
+    DefaultWindowSettings,    
 )
 
+
 class AppService(TDEServiceBase):
+
+    ################
+    # ~ Messages ~ #
+    ################
+    # None yet
 
     #####################
     # ~ Initialzation ~ #
@@ -42,33 +54,106 @@ class AppService(TDEServiceBase):
         super().__init__(services_manager)
         self.validate()
         self._content_instance_dict: dict[str, TDEMainWidget] = {}
+        self._registered_apps: dict[str, type[TDEAppBase]] = {}
+        self._failed_apps: dict[str, Exception] = {}
+
+        spec = importlib.util.find_spec("term_desktop.apps")
+        if spec is not None and spec.submodule_search_locations:
+            self._directories = [Path(next(iter(spec.submodule_search_locations)))]        
 
     ################
-    # ~ Messages ~ #
+    # ~ Contract ~ #
     ################
-    # None yet
-
-    ####################
-    # ~ External API ~ #
-    ####################
-    # This section is for methods or properties that might need to be
-    # accessed by anything else in TDE, including other services.
-
-    @property
-    def content_instance_dict(self) -> dict[str, TDEMainWidget]:
-        """Get the dictionary of main content widgets for each app ID"""
-        return self._content_instance_dict
 
     async def start(self) -> bool:
-        self.log("Starting App Service")
-        # Nothing to do here yet.
-        return True
+        """Start the App service.
+        If it returns True, the self.registered_apps dictionary will be available.
+
+        Raises:
+            RuntimeError: If the app discovery fails or no apps are found.
+
+        - Function is pure: [no]"""
+
+        self.log("Starting App service")
+        self._failed_apps.clear()
+
+        worker_meta: ServicesManager.WorkerMeta = {
+            "work": self._discover_apps,
+            "name": "DiscoverAppsWorker",
+            "service_id": self.SERVICE_ID,
+            "group": self.SERVICE_ID,
+            "description": "Discover apps in directories",
+            "exit_on_error": False,
+            "start": True,
+            "exclusive": True,  # only 1 app scan allowed at a time
+            "thread": False,
+        }
+        worker = self.run_worker(self.directories, worker_meta=worker_meta)
+
+        try:
+            self._registered_apps = await worker.wait()
+        except WorkerError as e:
+            self.log.error(f"Failed to discover apps: {str(e)}")
+            raise e
+        else:
+            if len(self.registered_apps) == 0:
+                self.log.error("Loader 'worked', but no apps were discovered. Must have malfunctioned.")
+                return True
+            else:
+                self.log.info(
+                    f"Discovered {len(self.registered_apps)} apps: \n"
+                    f"{', '.join(self.registered_apps.keys())}"
+                )
+            return True
+
 
     async def stop(self) -> bool:
         self.log("Stopping App Service")
         self._processes.clear()
         self._instance_counter.clear()
+        self._registered_apps.clear()
         return True
+    
+    ####################
+    # ~ External API ~ #
+    ####################
+    # Methods that might need to be accessed by
+    # anything else in TDE, including other services.
+
+    @property
+    def registered_apps(self) -> dict[str, type[TDEAppBase]]:
+        """
+        Get the currently registered apps.
+
+        Returns:
+            Dictionary mapping app IDs to their app classes.
+        """
+        return self._registered_apps
+
+    @property
+    def failed_apps(self) -> dict[str, Exception]:
+        """
+        Get the apps that failed to load.
+
+        Returns:
+            dict[str, Exception]: Dictionary mapping app IDs to the exceptions raised during loading.
+        """
+        return self._failed_apps
+    
+    @property
+    def directories(self) -> list[Path]:
+        """
+        Get the list of directories where apps are searched for.
+
+        Returns:
+            list[Path]: List of directories to search for app files.
+        """
+        return self._directories
+    
+    @property
+    def content_instance_dict(self) -> dict[str, TDEMainWidget]:
+        """Get the dictionary of main content widgets for each app ID"""
+        return self._content_instance_dict
 
     def request_app_launch(
         self,
@@ -90,6 +175,30 @@ class AppService(TDEServiceBase):
             self.log.error(f"Invalid app class: {TDE_App.__name__} is not a subclass of TDEAppBase")
             raise TypeError(f"{TDE_App.__name__} is not a valid TDEAppBase subclass")
 
+        asyncio.create_task(self._launch_app_runner(TDE_App))
+
+    def add_directory(self, directory: Path) -> None:
+        """
+        Add a directory to the list of directories to search for app files.
+
+        Args:
+            directory (Path): The directory to add.
+
+        - Function is pure: [no]
+        """
+        assert isinstance(directory, Path), "directory must be a Path object"
+        if not directory.exists():
+            raise FileNotFoundError(f"Directory does not exist: {directory}")
+        self._directories.append(directory)
+        self.log.debug(f"Added apps directory: {directory}")
+
+    ################
+    # ~ Internal ~ #
+    ################
+    # These should be marked with a leading underscore.
+
+    async def _launch_app_runner(self, TDE_App: type[TDEAppBase]) -> None:
+
         assert TDE_App.APP_NAME is not None
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._launch_app,
@@ -102,13 +211,11 @@ class AppService(TDEServiceBase):
             "exclusive": False,  # This is not an exclusive worker, multiple apps can be launched at once
             "thread": False,
         }
-        self.run_worker(TDE_App, worker_meta=worker_meta)
-
-    ################
-    # ~ Internal ~ #
-    ################
-    # This section is for methods that are only used internally
-    # These should be marked with a leading underscore.
+        worker = self.run_worker(TDE_App, worker_meta=worker_meta)
+        try:
+            await worker.wait()
+        except WorkerError:
+            self.log.error(f"Failed to launch app {TDE_App.APP_NAME}")
 
     async def _launch_app(self, TDE_App: type[TDEAppBase]) -> None:
         """
@@ -164,7 +271,7 @@ class AppService(TDEServiceBase):
 
             # Stage 6: Create the main content instance
             try:
-                content_instance = main_content(app_context)
+                content_instance = main_content(process_context=app_context)
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to create main content instance for {app_process.APP_NAME}: {e}"
@@ -212,3 +319,147 @@ class AppService(TDEServiceBase):
                 f"Invalid launch mode for {TDE_App.APP_NAME}: {launch_mode}. "
                 "Valid modes are: WINDOW, FULLSCREEN, DAEMON."
             )
+
+    async def _discover_apps(self, directories: list[Path]) -> dict[str, type[TDEAppBase]]:
+        """
+        Scan the provided app directories for apps and attempt to load them.
+
+        Args:
+            directories (list[Path]): List of directories to search for app files.
+        Returns:
+            Dictionary mapping app names to their app classes
+        Raises:
+            FileNotFoundError: If any of the directories do not exist.
+
+        - Function is pure: [✓]
+        """
+
+        self.log.debug("Discovering apps")
+        loaded_apps: dict[str, type[TDEAppBase]] = {}
+
+        # These allowed names could be extended in the future. I thought it would be
+        # good to code it in a way that allows for easy extension.
+        allowed_main_names = {"app.py", "main.py"}
+
+        # This is a dictionary where the key is the app name, and the value is a tuple
+        # containing the type of the path ('file' or 'dir') and the path itself.
+        apps_to_load: dict[str, tuple[str, Path]] = {}
+
+        for directory in directories:
+            if not os.path.exists(directory):
+                raise FileNotFoundError(f"Apps directory not found: {directory}")
+
+            for path in Path(directory).iterdir():
+                app_tuple: tuple[str, Path] | None = None
+                if not path.name.startswith("__"):  # excludes __init__ and __pycache__
+
+                    if path.is_file() and path.suffix == ".py":
+                        app_tuple = ("file", path)
+                    elif path.is_dir():
+                        for candidate in allowed_main_names:
+                            if (path / candidate).exists():
+                                app_tuple = ("dir", path)
+                                break
+                        if app_tuple is None:
+                            self.log.warning(f"Directory {path} does not contain a valid app file. Skipping.")
+                            continue
+                    else:
+                        continue
+
+                    if path.stem in apps_to_load:
+                        self.log.error(f"App with name '{path.stem}' already exists. Skipping: {path}")
+                        self._failed_apps[path.name] = ValueError("Duplicate app name")
+                        continue
+                    apps_to_load[path.stem] = app_tuple
+
+        # Code at this point will be finished scanning *all* directories.
+        # If there were any apps with the same name, the conflicting app was
+        # blocked from being added to the apps_to_load dict.
+        for _unique_key_, (file_or_dir, path) in apps_to_load.items():
+
+            try:
+                AppClass = self._load_app_class(path, file_or_dir)
+            except ImportError as e:
+                self.log.error(f"Failed to load app {path.name}: {str(e)}")
+                self._failed_apps[path.name] = e
+                continue
+            except Exception as e:
+                self.log.error(f"Unexpected error loading app {path.name}: {str(e)}")
+                self._failed_apps[path.name] = e
+                continue
+
+            # ~ Validate the app class ~ #
+            try:
+                AppClass.validate()
+            except NotImplementedError as e:
+                self.log.error(f"App {AppClass.__name__} failed validation: {str(e)}")
+                self._failed_apps[path.name] = e
+                continue
+
+            assert AppClass.APP_ID is not None  # validated above
+            try:
+                loaded_apps[AppClass.APP_ID] = AppClass
+            except KeyError as e:
+                #! NOTE: This should not be possible, as we check for duplicates above.
+                self.log.error(
+                    f"App was loaded successfully, but app with ID "
+                    f"{AppClass.APP_ID} is already registered!"
+                )
+                self._failed_apps[path.name] = e
+
+        return loaded_apps
+
+    def _load_app_class(self, path: Path, file_or_dir: str) -> type[TDEAppBase]:
+        """
+        Load an app class from a given path.
+
+        Args:
+            path (Path): Path to the app file.
+            file_or_dir (str): Type of the path, either 'file' or 'dir'.
+        Returns:
+            type[TDEAppBase]: The loaded app class.
+        Raises:
+            ImportError: If the app class cannot be loaded or does not implement the required interface.
+
+        - Function is pure: [✓]
+        """
+        if file_or_dir == "file":
+            location = path
+            module_name = f"dynamic_mod_{path.stem}"
+        else:
+            assert file_or_dir == "dir"
+            location = path / "app.py"
+            module_name = f"dynamic_pkg_{path.name}"
+
+        ### ~ Stage 1: Load the module spec ~ ###
+        try:
+            spec = importlib.util.spec_from_file_location(module_name, location)
+        except Exception as e:
+            raise ImportError(f"Failed to load spec for app {module_name}: {str(e)}") from e
+        else:
+            if spec is None or spec.loader is None:
+                raise ImportError(f"Failed to load spec for app {module_name}")
+
+        ### ~ Stage 2: Load module using the spec ~ ###
+        try:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+        except Exception as e:
+            raise ImportError(f"Failed to load module for app {module_name}: {str(e)}") from e
+
+        ### ~ Stage 3: Retrieve the app class from module ~ ###
+        try:
+            AppClass = next(
+                cls
+                for _name_, cls in module.__dict__.items()
+                if isinstance(cls, type) and issubclass(cls, TDEAppBase) and cls is not TDEAppBase
+            )
+        except StopIteration:
+            raise ImportError(
+                f"{module_name} did not return a valid TDEAppBase class."
+                "Ensure that your main app class inherits from TDEAppBase."
+            )
+        except Exception as e:
+            raise ImportError(f"Failed to retrieve app class from module {module_name}: {str(e)}") from e
+
+        return AppClass

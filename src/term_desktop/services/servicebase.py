@@ -1,11 +1,11 @@
-"servicebase.py"
+"servicebase.py - base class for all services in TDE."
 
 from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any  # , Callable, TypedDict
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
     from textual.worker import Worker
     from textual.message import Message
 
@@ -31,21 +31,13 @@ class TDEServiceBase(AceOfBase):
 
     @classmethod
     def validate(cls) -> None:
-        super().validate()
 
         required_members = {
             "SERVICE_ID": "class attribute",
             # more will go here as needed
         }
-
-        for attr_name, kind in required_members.items():
-            try:
-                attr = getattr(cls, attr_name)
-            except AttributeError:
-                raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
-            else:
-                if attr is None:
-                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+        cls.validate_stage1()
+        cls.validate_stage2(required_members)
 
     @property
     def processes(self) -> dict[str, AceOfBase]:

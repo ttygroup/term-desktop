@@ -39,6 +39,7 @@ class NotepadMeta(TDEAppBase):
     APP_ID = "notepad"
     ICON = "📝"
     DESCRIPTION = "TDE Notepad, simple text editor for TDE."
+    APP_AUTHOR = "TDE Team"
 
     def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n

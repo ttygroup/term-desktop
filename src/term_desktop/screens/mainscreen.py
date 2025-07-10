@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING  # , cast
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
+    from term_desktop.aceofbase import ProcessContext
 
 # # Textual imports
 from textual.widgets import Static
@@ -25,7 +26,6 @@ from textual.widgets import Static
 from term_desktop.screens.screenbase import TDEScreenBase, TDEScreen
 from term_desktop.shell.shellmanager import ShellManager
 
-
 class MainScreenMeta(TDEScreenBase):
     """
     The main screen of the Terminal Desktop Environment.
@@ -41,8 +41,24 @@ class MainScreenMeta(TDEScreenBase):
 
 class MainScreen(TDEScreen):
 
-    def on_mount(self) -> None:
-        self.call_after_refresh(self.mount_shell)
+    def __init__(self, process_context: ProcessContext) -> None:
+        super().__init__(process_context)
+        self.styles.opacity = 0.0  # Start with the screen hidden
+        self.call_after_refresh(self.screen_ready)
 
-    async def mount_shell(self) -> None:
-        await self.mount(ShellManager(self.services))
+    def compose(self) -> ComposeResult:
+
+        try:
+            yield ShellManager(self.services)
+        except Exception as e:
+            yield Static(f"Error mounting shell: {e}", classes="error")
+
+    async def screen_ready(self) -> None:
+
+        def animate_ready() -> None:
+            self.styles.animate(
+                "opacity",
+                1.0,
+                duration=0.3,
+            )
+        self.set_timer(0.3, animate_ready)

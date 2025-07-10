@@ -1,14 +1,13 @@
-"fileassociation.py"
+"fileassociations.py"
 
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from term_desktop.services.manager import ServicesManager
+    from term_desktop.services.serviceesmanager import ServicesManager
 
 # Textual imports
-# from textual import log   #? <- use this for logging to Textual dev console
 from term_desktop.services.servicebase import TDEServiceBase
 
 # Textual library imports
@@ -17,6 +16,11 @@ from term_desktop.services.servicebase import TDEServiceBase
 
 
 class FileAssociationService(TDEServiceBase):
+
+    ################
+    # ~ Messages ~ #
+    ################
+    # None yet
 
     #####################
     # ~ Initialzation ~ #
@@ -34,15 +38,8 @@ class FileAssociationService(TDEServiceBase):
         super().__init__(services_manager)
 
     ################
-    # ~ Messages ~ #
+    # ~ Contract ~ #
     ################
-    # None yet
-
-    ####################
-    # ~ External API ~ #
-    ####################
-    # This section is for methods or properties that might need to be
-    # accessed by anything else in TDE, including other services.
 
     async def start(self) -> bool:
         if True:
@@ -56,8 +53,14 @@ class FileAssociationService(TDEServiceBase):
         else:
             return False
 
+    ####################
+    # ~ External API ~ #
+    ####################
+    # Methods that might need to be accessed by
+    # anything else in TDE, including other services.
+
+
     ################
     # ~ Internal ~ #
     ################
-    # This section is for methods that are only used internally
     # These should be marked with a leading underscore.

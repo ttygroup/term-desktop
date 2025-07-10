@@ -26,6 +26,7 @@ class ClockMeta(TDEAppBase):
     APP_ID: str | None = "clock"
     ICON: str = "🕒"
     DESCRIPTION: str = "Simple digital clock"
+    APP_AUTHOR = "TDE Team"
 
     def launch_mode(self) -> LaunchMode:
 

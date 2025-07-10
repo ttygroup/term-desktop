@@ -5,179 +5,45 @@ from __future__ import annotations
 from typing import TYPE_CHECKING  # , cast
 
 if TYPE_CHECKING:
-    from textual.app import ComposeResult
-    from textual.widgets.directory_tree import DirEntry
+    # from textual.app import ComposeResult
     from term_desktop.services import ServicesManager
+    from term_desktop.shell.shellbase import TDEShellBase, TDEShellSession
 
 # Textual imports
-from textual import on, events  # , work
-from textual.widgets import (
-    DirectoryTree,
-)
-from textual.binding import Binding
+# from textual import on, events  # , work
+# from textual.binding import Binding
 from textual.widget import Widget
 
-# Textual library imports
-from textual_window import Window, WindowSwitcher
-from textual_slidecontainer import SlideContainer
 
 #################
 # Local imports #
 #################
-from term_desktop.common import (
-    DummyScreen,
-)
-from term_desktop.common.messages import (
-    ToggleStartMenu,
-    ToggleExplorer,
-    ToggleTaskBar,
-    ToggleWindowSwitcher,
-)
-
-# from term_desktop.shell.shellbase import ShellBase
-from term_desktop.shell.desktop import Desktop
-
-# TODO: Shell theme Plugin system here
-from term_desktop.shell.ranger_theme import (
-    StartMenu,
-    AppChooser,
-    TaskBar,
-    FileExplorer,
-    ExplorerPathBar,
-)
-
-#! NOTE: THIS IS JUST A PLACEHOLDER FOR THE SHELL MANAGER.
-# This is not an actual shell manager. I just copied in the code
-# for the old main screen. As of writing this, the addition of the
-# AceOfBase and converting everything to use it was just completed.
-
+# None right now
 
 class ShellManager(Widget):
-
-    BINDINGS = [
-        Binding("f1", "toggle_startmenu", "Quick Launcher"),
-        Binding("f2", "toggle_explorer", "File Explorer"),
-        Binding("f3", "toggle_windowbar", "Window Bar"),
-        Binding("f4", "toggle_windowswitcher", "Window Switcher"),
-        Binding("f12", "toggle_transparency", "Toggle Transparency"),
-    ]
 
     def __init__(self, services: ServicesManager) -> None:
         super().__init__()
         self.services = services
-        self.styles.opacity = 0
-
-    def compose(self) -> ComposeResult:
-
-        self.log.debug("Composing ShellManager...")
-
-        ##############################
-        ### SCREEN PUSHING WIDGETS ###
-        yield WindowSwitcher(cycle_key="f4")
-
-        ######################
-        ### DOCKED WIDGETS ###
-        yield FileExplorer()  # the order these are in is important for the layout
-        yield ExplorerPathBar()
-        yield StartMenu(self.services)
-        yield TaskBar(start_open=True)
-
-        ###############
-        ### DESKTOP ###
-        yield Desktop(id="main_desktop")
-
-        # NOTE: Windows are mounted into the Desktop container.
-
+        self.services.shell_service.register_mounting_callback(self.mounting_callback)
+        self.registered_shells = self.services.shell_service.registered_shells        
+        self.load_registered_shells(self.registered_shells)
+        
     def on_mount(self) -> None:
-        self.services.window_service.register_mounting_callback(
-            self.mounting_callback,
-            callback_id="main_desktop",
-        )
-        self.set_timer(0.3, self.finish_mounting)
+        self.load_chosen_shell()
 
-    def finish_mounting(self) -> None:
-        self.styles.animate("opacity", 1.0, duration=0.5)
+    async def mounting_callback(self, shell: TDEShellSession) -> None:
+        await self.mount(shell)
 
-    async def mounting_callback(self, window: Window) -> None:
-        await self.query_one(Desktop).mount(window)
+    def load_registered_shells(self, registered_shells: dict[str, type[TDEShellBase]]) -> None:
 
-    ###############
-    # ~ Actions ~ #
-    ###############
+        registred_shells_str = ""
+        for key, value in registered_shells.items():
+            registred_shells_str += f"{key} -> {value.SHELL_NAME}\n"
+        self.log.info(f"Registered shells in Shell Manager:\n{registred_shells_str}")
 
-    def action_toggle_transparency(self) -> None:
-        self.app.ansi_color = not self.app.ansi_color
-        self.app.push_screen(DummyScreen())
+    def load_chosen_shell(self) -> None:
+        # There is no chosen shell at the moment. Only the default shell is available.
+        self.log.info("No chosen shell. Using the default shell.")
+        self.services.shell_service.mount_default_shell()
 
-    @on(ToggleTaskBar)
-    def action_toggle_windowbar(self) -> None:
-        """Toggle the visibility of the window bar."""
-        self.query_one(TaskBar).toggle_bar()
-
-    @on(ToggleWindowSwitcher)
-    def action_toggle_windowswitcher(self) -> None:
-        """Toggle the visibility of the window switcher."""
-        self.query_one(WindowSwitcher).show()
-
-    @on(ToggleExplorer)
-    def action_toggle_explorer(self) -> None:
-        """Toggle the visibility of Slide Menu 1."""
-        explorer = self.query_one(FileExplorer)
-        path_bar = self.query_one(ExplorerPathBar)
-        explorer.toggle()
-        path_bar.toggle()
-
-    @on(ToggleStartMenu)
-    def action_toggle_startmenu(self) -> None:
-        """Open the start menu / quick launcher."""
-        self.query_one(StartMenu).toggle()
-
-    ####################
-    # ~ Other Events ~ #
-    ####################
-
-    @on(events.Click)
-    async def handle_click(self, event: events.Click):
-        """This method exists to make the start menu close if someone clicks
-        elsewhere on the screen while it is open"""
-
-        start_menu = self.query_one(StartMenu)
-        if not start_menu.state:  # if its currently closed, do nothing.
-            return
-        if event.widget:
-            if (
-                event.widget is not self.query_one(StartMenu)  # not the start menu
-                and event.widget not in start_menu.query().results()  # not inside the start menu
-                and event.widget is not self.query_one(TaskBar).query_one("#start_button")
-            ):
-                await self.run_action("toggle_startmenu")
-
-    @on(TaskBar.DockToggled)
-    def taskbar_dock_toggled(self, event: TaskBar.DockToggled) -> None:
-
-        self.query_one(FileExplorer).shift_ui_for_taskbar(event.dock)
-        self.query_one(ExplorerPathBar).shift_ui_for_taskbar(event.dock)
-        self.query_one(StartMenu).shift_ui_for_taskbar(event.dock)
-
-    @on(SlideContainer.SlideCompleted, "FileExplorer")
-    def slide_completed_explorer(self, event: SlideContainer.SlideCompleted) -> None:
-
-        if not event.state:
-            taskbar = self.query_one(TaskBar)
-            taskbar.refresh_buttons()  # this is to fix a graphical glitch.
-
-    @on(DirectoryTree.FileSelected)
-    def file_selected(self, event: DirectoryTree.FileSelected) -> None:
-
-        if event.node.data:
-            path = event.node.data.path
-            self.app.push_screen(AppChooser(path))
-
-    @on(DirectoryTree.NodeHighlighted)
-    def node_highlighted(self, event: DirectoryTree.NodeHighlighted[DirEntry]) -> None:
-
-        if event.node.data:
-            path_bar = self.query_one(ExplorerPathBar)
-            path_bar.update_path(event.node.data.path)
-        else:
-            self.log.error("Node data is None, cannot update path.")

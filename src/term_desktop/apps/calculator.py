@@ -41,6 +41,7 @@ class CalculatorMeta(TDEAppBase):
     APP_ID = "calculator"
     ICON = "🧮"
     DESCRIPTION = "Calculate things, mostly numbers."
+    APP_AUTHOR = "Lifted from Textual examples by the TDE team"
 
     def launch_mode(self) -> LaunchMode:
         """Returns the launch mode for the app. \n
