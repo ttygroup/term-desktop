@@ -167,12 +167,12 @@ class ScreenService(TDEServiceBase):
             "name": f"PushScreenWorker-{TDE_Screen.SCREEN_ID}",
             "service_id": self.SERVICE_ID,
             "group": self.SERVICE_ID,
-            "description": f"Push screen {TDE_Screen.SCREEN_ID} onto the screen stack.",
+            "description": f"Push screen {TDE_Screen.SCREEN_ID} using registered callback.",
             "exit_on_error": False,
             "start": True,
             "exclusive": True,  # only 1 screen push allowed at a time
             "thread": False,
-        }  
+        }
         worker = self.run_worker(TDE_Screen, worker_meta=worker_meta)
         try:
             await worker.wait()

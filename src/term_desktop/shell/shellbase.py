@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Iterable #, Any
+from typing import TYPE_CHECKING, Iterable  # , Any
 
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
     from textual.app import ComposeResult
-    # from textual.screen import Screen    
+
+    # from textual.screen import Screen
     from textual.widgets.directory_tree import DirEntry
 
 # Textual imports
@@ -22,7 +23,6 @@ from textual.widgets import (
 # from textual.widget import Widget
 
 # Textual library imports
-from textual_window import Window
 from textual_window.switcher import WindowSwitcherScreen
 from textual_slidecontainer import SlideContainer
 
@@ -39,13 +39,12 @@ from term_desktop.common.messages import (
     ToggleTaskBar,
     ToggleWindowSwitcher,
 )
+from term_desktop.windows.windowbase import TDEWindow
 from term_desktop.shell.desktop import Desktop
-
 from term_desktop.shell.default.start import StartMenu
 from term_desktop.shell.default.taskbar import TaskBar
 from term_desktop.shell.default.explorer import FileExplorer, ExplorerPathBar
 from term_desktop.shell.default.appchooser import AppChooser
-
 
 
 class TDEShellBase(AceOfBase):
@@ -76,7 +75,7 @@ class TDEShellBase(AceOfBase):
     #     """
     #     # This returns an empty dictionary when not overridden.
     #     return {
-    # 
+    #
     #     }
 
     #####################
@@ -92,7 +91,7 @@ class TDEShellBase(AceOfBase):
 
     #####################
     # ~ Backend Setup ~ #
-    #####################            
+    #####################
 
     @classmethod
     def validate(cls) -> None:
@@ -108,11 +107,9 @@ class TDEShellBase(AceOfBase):
         cls.validate_stage1()
         cls.validate_stage2(required_members)
 
-
     async def kill(self) -> None:
         # N/I yet
         pass
-
 
 
 class TDEShellSession(Widget):
@@ -163,10 +160,10 @@ class TDEShellSession(Widget):
     # into the shell. By default it will mount them into the main desktop.
     # Someone might want to override this to mount them into a different
     # container or to do some other logic (perhaps for a tiling manager or something).
-    async def mounting_callback(self, window: Window) -> None:
+    async def mounting_callback(self, window: TDEWindow) -> None:
         await self.query_one(Desktop).mount(window)
 
-    # This will be called by the shell service when the shell session is initialized. 
+    # This will be called by the shell service when the shell session is initialized.
     def post_initialized(self) -> None:
         self.post_message(self.Initialized())
 
@@ -209,7 +206,7 @@ class TDEShellSession(Widget):
 
     ##################
     # ~ Properties ~ #
-    ################## 
+    ##################
 
     @property
     def process_type(self) -> ProcessType:
@@ -307,7 +304,3 @@ class TDEShellSession(Widget):
             path_bar.update_path(event.node.data.path)
         else:
             self.log.error("Node data is None, cannot update path.")
-
-
-
-

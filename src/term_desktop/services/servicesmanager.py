@@ -2,9 +2,12 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TypedDict, Callable, Any, cast
+from typing import TypedDict, Callable, Any, cast, TYPE_CHECKING
 from functools import partial
 from time import time
+
+if TYPE_CHECKING:
+    import rich.repr
 
 # from uuid import uuid4
 
@@ -34,7 +37,7 @@ class ServicesManager(Widget):
 
     class WorkerMeta(TypedDict):
         """WorkerMeta is required to run work on the ServicesManager.
-        
+
         Required keys:
         - work: Callable[..., Any]
         - name: str
@@ -70,7 +73,7 @@ class ServicesManager(Widget):
         self.display = False
 
         # _active_workers is a dict that maps
-        # worker IDs to tuples of (worker name, service ID, start time)        
+        # worker IDs to tuples of (worker name, service ID, start time)
         self._active_workers: dict[str, tuple[str, str, float]] = {}
 
         # Note that Textual's built in Worker Manager also keeps an internal list of workers,
@@ -90,18 +93,22 @@ class ServicesManager(Widget):
         # Create instances of the services
         try:
             self.shell_service = ShellService(self)
-            self.screen_service = ScreenService(self)  
-            self.window_service = WindowService(self)                                  
+            self.screen_service = ScreenService(self)
+            self.window_service = WindowService(self)
             self.app_service = AppService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize services: {str(e)}") from e
 
-        #! This dictionary isn't used by anything yet.
-        self.services_dict: dict[str, type[TDEServiceBase]] = {}
-        self.services_dict["shell_service"] = ShellService
-        self.services_dict["screen_service"] = ScreenService
-        self.services_dict["window_service"] = WindowService
-        self.services_dict["app_service"] = AppService
+        self.services_dict: dict[str, TDEServiceBase] = {}
+        self.services_dict["shell_service"] = self.shell_service
+        self.services_dict["screen_service"] = self.screen_service
+        self.services_dict["window_service"] = self.window_service
+        self.services_dict["app_service"] = self.app_service
+
+    def __rich_repr__(self) -> rich.repr.Result:
+        for service in self.services_dict.values():
+            yield f"{service.SERVICE_ID} processes:"
+            yield service.processes.keys()
 
     # @work(exclusive=True, group="service_manager")
     def start_all_services(self) -> None:
@@ -254,7 +261,9 @@ class ServicesManager(Widget):
                 self.set_timer(3, self._check_running_workers)
 
         elif worker.state == WorkerState.ERROR:
-            self.log.error(Text.from_markup(f"[bold red]Worker {worker.name} encountered an error: {worker.error!r}"))
+            self.log.error(
+                Text.from_markup(f"[bold red]Worker {worker.name} encountered an error: {worker.error!r}")
+            )
 
             # In the future this should be replaced by a proper error screen.
             # But this will do for now.
@@ -269,18 +278,18 @@ class ServicesManager(Widget):
             self.log(Text.from_markup(f"[bold green]Worker {worker.name} has completed successfully."))
 
             # Remove the worker from the active workers dict
-            worker_id = getattr(worker, "worker_id") # type: ignore (Textual type hinting issue)
+            worker_id = getattr(worker, "worker_id")  # type: ignore (Textual type hinting issue)
             assert worker_id in self._active_workers
             del self._active_workers[worker_id]
 
     def _check_running_workers(self) -> None:
         """Check if any workers are still running and log their status."""
-        
+
         self._worker_check_pending = False
         self.workers_over_limit: dict[str, Worker[Any]] = {}
         at_least_one_from_service_manager = False
         if self.workers:
-            
+
             log_string = ""
             for worker in self.workers:
                 worker_id = getattr(worker, "worker_id", None)
@@ -293,13 +302,13 @@ class ServicesManager(Widget):
 
                 if elapsed_time > 10:
                     self.workers_over_limit[worker_id] = worker
-            
+
             if at_least_one_from_service_manager:
                 self.log(Text.from_markup(f"[bold yellow]Worker Status[/bold yellow]\n{log_string}"))
                 self._worker_check_pending = True
                 self.set_timer(3, self._check_running_workers)
             else:
-                self.log("No active workers on the Services Manager.")             
+                self.log("No active workers on the Services Manager.")
             return
 
         if self.workers_over_limit:
@@ -307,5 +316,5 @@ class ServicesManager(Widget):
                 self.log.error(f"Worker {worker.name} has exceeded the time limit")
                 worker.cancel()
             return
-        
+
         self.log("No active workers on the Services Manager.")

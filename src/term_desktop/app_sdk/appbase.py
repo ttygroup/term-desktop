@@ -8,7 +8,15 @@ from enum import Enum
 
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
-    from textual_window.window import Window, STARTING_HORIZONTAL, STARTING_VERTICAL, MODE, WindowStylesDict
+    from term_desktop.services.windows import WindowService
+    from term_desktop.services.screens import ScreenService    
+    from textual_window.window import (
+        Window,
+        STARTING_HORIZONTAL,
+        STARTING_VERTICAL,
+        MODE,
+        WindowStylesDict,
+    )
 
 # Textual imports
 from textual.message import Message
@@ -271,11 +279,10 @@ class TDEMainWidget(Widget):
             super().__init__()
             self.window = window
 
-
     def __init__(self, process_context: ProcessContext):
         """The process context is passed in by the Process Manager when it initializes the app.
         It contains the process type, process ID, process UID, and services manager.
-        
+
         If you override this method, you must have an argument named `process_context`
         which you pass into the super constructor:
         ```
@@ -283,6 +290,8 @@ class TDEMainWidget(Widget):
         ```"""
         super().__init__()
         self._process_context = process_context
+        self._window_process_id: str | None = None  # only if window used
+        self._screen_process_id: str | None = None  # only if screen used
 
     @property
     def process_type(self) -> ProcessType:
@@ -299,6 +308,35 @@ class TDEMainWidget(Widget):
     @property
     def services(self) -> ServicesManager:
         return self._process_context["services"]
+
+    @property
+    def window_process_id(self) -> str | None:
+        """Returns the process ID of the window that this widget is mounted in.
+        This is only set if the widget is mounted in a window."""
+        return self._window_process_id
+
+    def set_window_process_id(self, value: str | None, caller: WindowService) -> None:
+        """Attaches the process ID of the window that this widget is mounted in.
+        This is only set if the widget is mounted in a window."""
+
+        if caller is not self.services.window_service:
+            raise TypeError("This can only be set by the WindowService.")
+        self._window_process_id = value
+
+    #! NOT USED YET - SCREEN SYSTEM FOR APPS NOT BUILT YET
+    @property
+    def screen_process_id(self) -> str | None:
+        """Returns the process ID of the screen that this widget is mounted in.
+        This is only set if the widget is mounted in a screen."""
+        return self._screen_process_id
+
+    def set_screen_process_id(self, value: str | None, caller: ScreenService) -> None:
+        """Attaches the process ID of the screen that this widget is mounted in.
+        This is only set if the widget is mounted in a screen."""
+
+        if caller is not self.services.screen_service:
+            raise TypeError("This can only be set by the ScreenService.")
+        self._screen_process_id = value
 
     def post_initialized(self, window: Window) -> None:
         """This method is called by the WindowService when the window is mounted.

@@ -20,15 +20,16 @@ from textual.widget import Widget
 #################
 # None right now
 
+
 class ShellManager(Widget):
 
     def __init__(self, services: ServicesManager) -> None:
         super().__init__()
         self.services = services
         self.services.shell_service.register_mounting_callback(self.mounting_callback)
-        self.registered_shells = self.services.shell_service.registered_shells        
+        self.registered_shells = self.services.shell_service.registered_shells
         self.load_registered_shells(self.registered_shells)
-        
+
     def on_mount(self) -> None:
         self.load_chosen_shell()
 
@@ -46,4 +47,3 @@ class ShellManager(Widget):
         # There is no chosen shell at the moment. Only the default shell is available.
         self.log.info("No chosen shell. Using the default shell.")
         self.services.shell_service.mount_default_shell()
-

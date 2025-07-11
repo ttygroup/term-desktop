@@ -57,7 +57,6 @@ class FooBase(AceOfBase):
 
     @classmethod
     def validate(cls) -> None:
-        cls.validate()
 
         # You can also add class level attributes that must be
         # implemented by subclasses:
@@ -66,6 +65,8 @@ class FooBase(AceOfBase):
         #     "FOO_NAME": "class attribute",
         #     "FOO_ID": "class attribute",
         # }
+
+        cls.validate_stage1()
         # cls.validate_stage2(required_members)
 
 

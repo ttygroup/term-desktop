@@ -26,6 +26,7 @@ from textual.widgets import Static
 from term_desktop.screens.screenbase import TDEScreenBase, TDEScreen
 from term_desktop.shell.shellmanager import ShellManager
 
+
 class MainScreenMeta(TDEScreenBase):
     """
     The main screen of the Terminal Desktop Environment.
@@ -61,4 +62,5 @@ class MainScreen(TDEScreen):
                 1.0,
                 duration=0.3,
             )
+
         self.set_timer(0.3, animate_ready)

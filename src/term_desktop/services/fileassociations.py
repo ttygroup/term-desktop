@@ -59,7 +59,6 @@ class FileAssociationService(TDEServiceBase):
     # Methods that might need to be accessed by
     # anything else in TDE, including other services.
 
-
     ################
     # ~ Internal ~ #
     ################
