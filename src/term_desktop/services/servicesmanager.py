@@ -92,25 +92,67 @@ class ServicesManager(Widget):
 
         # Create instances of the services
         try:
-            self.shell_service = ShellService(self)
-            self.screen_service = ScreenService(self)
-            self.window_service = WindowService(self)
-            self.app_service = AppService(self)
+            self._shell_service = ShellService(self)
+            self._screen_service = ScreenService(self)
+            self._window_service = WindowService(self)
+            self._app_service = AppService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize services: {str(e)}") from e
 
-        self.services_dict: dict[str, TDEServiceBase] = {}
-        self.services_dict["shell_service"] = self.shell_service
-        self.services_dict["screen_service"] = self.screen_service
-        self.services_dict["window_service"] = self.window_service
-        self.services_dict["app_service"] = self.app_service
+        self._services_dict: dict[str, TDEServiceBase] = {}
+        self._services_dict["shell_service"] = self.shell_service
+        self._services_dict["screen_service"] = self.screen_service
+        self._services_dict["window_service"] = self.window_service
+        self._services_dict["app_service"] = self.app_service
 
     def __rich_repr__(self) -> rich.repr.Result:
         for service in self.services_dict.values():
             yield f"{service.SERVICE_ID} processes:"
             yield service.processes.keys()
 
-    # @work(exclusive=True, group="service_manager")
+    ##################
+    # ~ Properties ~ #
+    ##################
+
+    @property
+    def shell_service(self):
+        """The ShellService instance."""
+        return self._shell_service
+    
+    @property
+    def screen_service(self):
+        """The ScreenService instance."""
+        return self._screen_service    
+
+    @property
+    def window_service(self):
+        """The WindowService instance."""
+        return self._window_service
+    
+    @property
+    def app_service(self):
+        """The AppService instance."""
+        return self._app_service
+    
+    @property
+    def services_dict(self) -> dict[str, TDEServiceBase]:
+        """A dictionary of all services managed by this ServicesManager."""
+        return self._services_dict
+    
+    @property
+    def active_workers(self) -> dict[str, tuple[str, str, float]]:
+        """A dictionary of active workers with their IDs, names, service IDs, and start times."""
+        return self._active_workers
+    
+    @property
+    def actively_running_workers(self) -> dict[str, WorkerState]:
+        """A dictionary of actively running workers with their IDs and states."""
+        return self._actively_running_workers
+
+    ####################
+    # ~ External API ~ #
+    ####################    
+
     def start_all_services(self) -> None:
         """Start all services."""
 
@@ -126,62 +168,6 @@ class ServicesManager(Widget):
             "thread": False,
         }
         self.run_worker(worker_meta=worker_meta)
-
-    async def _start_all_services(self) -> None:
-        """
-        # ? This will eventually be built out to have some kind of monitoring
-        # system to watch the state of active services, stop/restart them, etc.
-        """
-
-        try:
-            assert isinstance(self.shell_service, TDEServiceBase)
-            shell_service_success = await self.shell_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"ShellService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not shell_service_success:
-                raise RuntimeError("ShellService startup returned False after running.")
-            self.log("ShellService started up successfully.")
-
-        try:
-            assert isinstance(self.screen_service, TDEServiceBase)
-            screen_service_success = await self.screen_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"ScreenService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not screen_service_success:
-                raise RuntimeError("ScreenService startup returned False after running.")
-            self.log("ScreenService started up successfully.")
-
-        try:
-            assert isinstance(self.window_service, TDEServiceBase)
-            window_service_success = await self.window_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"WindowService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not window_service_success:
-                raise RuntimeError("WindowService startup returned False after running.")
-            self.log("WindowService started up successfully.")
-
-        try:
-            assert isinstance(self.app_service, TDEServiceBase)
-            app_service_success = await self.app_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"AppService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not app_service_success:
-                raise RuntimeError("AppService startup returned False after running.")
-            self.log("AppService started up successfully.")
-
-        self.post_message(self.ServicesStarted())
 
     def run_worker(
         self,
@@ -240,8 +226,69 @@ class ServicesManager(Widget):
         setattr(worker, "start_time", start_time)
         return worker
 
+    ################
+    # ~ Internal ~ #
+    ################  
+
+    async def _start_all_services(self) -> None:
+        """
+        # ? This will eventually be built out to have some kind of monitoring
+        # system to watch the state of active services, stop/restart them, etc.
+        """
+
+        try:
+            assert isinstance(self.shell_service, TDEServiceBase)
+            shell_service_success = await self.shell_service.start()
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"ShellService startup failed with an unexpected error: {str(e)}") from e
+        else:
+            if not shell_service_success:
+                raise RuntimeError("ShellService startup returned False after running.")
+            self.log("ShellService started up successfully.")
+
+        try:
+            assert isinstance(self.screen_service, TDEServiceBase)
+            screen_service_success = await self.screen_service.start()
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"ScreenService startup failed with an unexpected error: {str(e)}") from e
+        else:
+            if not screen_service_success:
+                raise RuntimeError("ScreenService startup returned False after running.")
+            self.log("ScreenService started up successfully.")
+
+        try:
+            assert isinstance(self.window_service, TDEServiceBase)
+            window_service_success = await self.window_service.start()
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"WindowService startup failed with an unexpected error: {str(e)}") from e
+        else:
+            if not window_service_success:
+                raise RuntimeError("WindowService startup returned False after running.")
+            self.log("WindowService started up successfully.")
+
+        try:
+            assert isinstance(self.app_service, TDEServiceBase)
+            app_service_success = await self.app_service.start()
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"AppService startup failed with an unexpected error: {str(e)}") from e
+        else:
+            if not app_service_success:
+                raise RuntimeError("AppService startup returned False after running.")
+            self.log("AppService started up successfully.")
+
+        self.post_message(self.ServicesStarted())
+
+
     @on(Worker.StateChanged)
-    def worker_state_changed(self, event: Worker.StateChanged) -> None:
+    def _worker_state_changed(self, event: Worker.StateChanged) -> None:
 
         worker = event.worker  #                          type: ignore (Textual type hinting issue)
         worker_id = getattr(worker, "worker_id", None)  # type: ignore (Textual type hinting issue)

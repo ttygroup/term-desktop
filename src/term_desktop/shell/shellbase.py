@@ -7,16 +7,16 @@ from typing import TYPE_CHECKING, Iterable  # , Any
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
     from textual.app import ComposeResult
-
-    # from textual.screen import Screen
+    from textual_window import Window
     from textual.widgets.directory_tree import DirEntry
 
 # Textual imports
 from textual import on, events  # , work
 from textual.widget import Widget
 from textual.message import Message
+from textual.binding import Binding
 from textual.widgets import (
-    DirectoryTree,
+    DirectoryTree
 )
 
 # from textual.binding import Binding
@@ -30,16 +30,12 @@ from textual_slidecontainer import SlideContainer
 # Local imports #
 #################
 from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
-from term_desktop.common import (
-    DummyScreen,
-)
 from term_desktop.common.messages import (
     ToggleStartMenu,
     ToggleExplorer,
     ToggleTaskBar,
     ToggleWindowSwitcher,
 )
-from term_desktop.windows.windowbase import TDEWindow
 from term_desktop.shell.desktop import Desktop
 from term_desktop.shell.default.start import StartMenu
 from term_desktop.shell.default.taskbar import TaskBar
@@ -129,6 +125,15 @@ class TDEShellSession(Widget):
         # def __init__(self):
         #     super().__init__()
 
+    # BINDINGS = [
+    #     Binding("f4", "toggle_windowswitcher", "Toggle Window Switcher"),
+    #     Binding("f2", "toggle_explorer", "Toggle File Explorer"),
+    #     Binding("f1", "toggle_startmenu", "Toggle Start Menu"),
+    #     Binding("f5", "toggle_windowbar", "Toggle Task Bar"),
+    #     Binding("f12", "toggle_transparency", "Toggle Transparency"),
+    # ]
+
+
     def __init__(self, process_context: ProcessContext):
         super().__init__()
         self._process_context = process_context
@@ -160,7 +165,7 @@ class TDEShellSession(Widget):
     # into the shell. By default it will mount them into the main desktop.
     # Someone might want to override this to mount them into a different
     # container or to do some other logic (perhaps for a tiling manager or something).
-    async def mounting_callback(self, window: TDEWindow) -> None:
+    async def mounting_callback(self, window: Window) -> None:
         await self.query_one(Desktop).mount(window)
 
     # This will be called by the shell service when the shell session is initialized.
@@ -227,10 +232,6 @@ class TDEShellSession(Widget):
     ###############
     # ~ Actions ~ #
     ###############
-
-    def action_toggle_transparency(self) -> None:
-        self.app.ansi_color = not self.app.ansi_color
-        self.app.push_screen(DummyScreen())
 
     @on(ToggleTaskBar)
     def action_toggle_windowbar(self) -> None:

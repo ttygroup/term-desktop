@@ -10,7 +10,7 @@ authors = [
 license = { text = "MIT" }
 keywords = ["python", "textual", "tui", "window", "widget"]
 dependencies = [
-    "textual>=3.3.0",
+    "textual>=3.7.1",
     "textual-autocomplete>=4.0.4",
     "textual-coloromatic>=0.2.2",
     "textual-hires-canvas>=0.9.0",
