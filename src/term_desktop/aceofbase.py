@@ -4,7 +4,7 @@ from abc import ABC  # , abstractmethod
 import enum
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
     from textual import Logger
 
 from textual import log
@@ -103,8 +103,8 @@ class AceOfBase(ABC):
                 f"{', '.join(missing)}\n"
                 "Please implement them to make the screen functional."
             )
-        
-    @classmethod        
+
+    @classmethod
     def validate_stage2(cls, required_members: dict[str, str]) -> None:
 
         for attr_name, kind in required_members.items():
@@ -115,4 +115,4 @@ class AceOfBase(ABC):
                 raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
             else:
                 if attr is None:
-                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")        
+                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")

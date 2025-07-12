@@ -43,7 +43,6 @@ class MainScreenMeta(TDEScreenBase):
 
 class MainScreen(TDEScreen):
 
-
     def compose(self) -> ComposeResult:
 
         try:

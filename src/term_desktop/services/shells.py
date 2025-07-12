@@ -5,14 +5,14 @@ use the same dynamic loading mechanism to scan for either shells or apps."""
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING, Awaitable, Callable # , Any
+from typing import TYPE_CHECKING, Awaitable, Callable  # , Any
 import os
 import importlib.util
 from pathlib import Path
 import asyncio
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
 
 # Textual imports
 from textual.worker import WorkerError
@@ -57,7 +57,7 @@ class ShellService(TDEServiceBase):
 
         spec = importlib.util.find_spec("term_desktop.shells")
         if spec is not None and spec.submodule_search_locations:
-            self._directories = [Path(next(iter(spec.submodule_search_locations)))]        
+            self._directories = [Path(next(iter(spec.submodule_search_locations)))]
 
     ################
     # ~ Contract ~ #
@@ -104,14 +104,13 @@ class ShellService(TDEServiceBase):
                 )
             return True
 
-
     async def stop(self) -> bool:
         self.log("Stopping Shell Service")
         self._processes.clear()
         self._instance_counter.clear()
         self._registered_shells.clear()
         return True
-    
+
     ####################
     # ~ External API ~ #
     ####################
@@ -137,7 +136,7 @@ class ShellService(TDEServiceBase):
             dict[str, Exception]: Dictionary mshelling shell IDs to the exceptions raised during loading.
         """
         return self._failed_shells
-    
+
     @property
     def directories(self) -> list[Path]:
         """
@@ -182,7 +181,7 @@ class ShellService(TDEServiceBase):
         if not issubclass(TDE_Shell, TDEShellBase):  # type: ignore[unused-ignore]
             self.log.error(f"Invalid shell class: {TDE_Shell.__name__} is not a subclass of TDEShellBase")
             raise TypeError(f"{TDE_Shell.__name__} is not a valid TDEShellBase subclass")
-        
+
         asyncio.create_task(self._launch_shell_runner(TDE_Shell))
 
     def register_mounting_callback(self, callback: Callable[[TDEShellSession], Awaitable[None]]) -> None:
@@ -238,7 +237,6 @@ class ShellService(TDEServiceBase):
 
         self.request_shell_launch(default_shell_class)
 
-
     ################
     # ~ Internal ~ #
     ################
@@ -260,7 +258,7 @@ class ShellService(TDEServiceBase):
         }
         worker = self.run_worker(TDE_Shell, worker_meta=worker_meta)
         try:
-            await worker.wait() 
+            await worker.wait()
         except WorkerError:
             self.log.error(f"Failed to launch shell {TDE_Shell.SHELL_NAME}")
 
@@ -288,7 +286,9 @@ class ShellService(TDEServiceBase):
         try:
             shell_process = TDE_Shell()
         except Exception as e:
-            raise RuntimeError(f"Error while creating shell process '{TDE_Shell.__class__.__name__}': {e}") from e
+            raise RuntimeError(
+                f"Error while creating shell process '{TDE_Shell.__class__.__name__}': {e}"
+            ) from e
 
         # NOTE: Even though there can only ever be one shell process running at a time,
         # we will still add it to the process dictionary just to be consistent with
@@ -339,7 +339,6 @@ class ShellService(TDEServiceBase):
 
         shell_session_instance.post_initialized()
 
-
     async def _discover_shells(self, directories: list[Path]) -> dict[str, type[TDEShellBase]]:
         """
         Scan the provided shell directories for shells and attempt to load them.
@@ -378,7 +377,9 @@ class ShellService(TDEServiceBase):
                                 shell_path = path
                                 break
                         if shell_path is None:
-                            self.log.warning(f"Directory {path} does not contain a valid shell file. Skipping.")
+                            self.log.warning(
+                                f"Directory {path} does not contain a valid shell file. Skipping."
+                            )
                             continue
                     else:
                         continue

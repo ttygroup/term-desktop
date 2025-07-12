@@ -2,10 +2,11 @@
 
 # python standard library imports
 from __future__ import annotations
+
 # from typing import TYPE_CHECKING  # , cast
 
 # if TYPE_CHECKING:
-    # from textual.app import ComposeResult
+# from textual.app import ComposeResult
 
 # # Textual imports
 # from textual.widgets import Static
@@ -45,4 +46,5 @@ class DefaultShellSession(TDEShellSession):
     The default shell session for the Terminal Desktop Environment.
     This session is responsible for handling the shell's functionality.
     """
-    #~ Thats all she wrote bubs!
+
+    # ~ Thats all she wrote bubs!

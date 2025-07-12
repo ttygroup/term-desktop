@@ -107,13 +107,15 @@ class NotepadWidget(TDEMainWidget):
     @on(events.DescendantFocus)
     def descendant_focused(self, event: events.DescendantFocus) -> None:
 
-        window = self.services.window_service.get_window_by_process_id(self.process_id)
+        assert self.window_process_id is not None  # we know this is set by the window service
+        window = self.services.window_service.get_window_by_process_id(self.window_process_id)
         window.query_one(CommandBar).add_class("focused")
 
     @on(events.DescendantBlur)
     def descendant_blurred(self, event: events.DescendantBlur) -> None:
 
-        window = self.services.window_service.get_window_by_process_id(self.process_id)
+        assert self.window_process_id is not None  # we know this is set by the window service
+        window = self.services.window_service.get_window_by_process_id(self.window_process_id)
         window.query_one(CommandBar).remove_class("focused")
 
 

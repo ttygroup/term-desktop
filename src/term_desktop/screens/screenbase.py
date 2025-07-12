@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
 
     # from term_desktop.app_sdk import AppContext
     # from textual.window import Window

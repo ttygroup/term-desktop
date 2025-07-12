@@ -5,7 +5,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any  # , Callable, TypedDict
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
     from textual.worker import Worker
     from textual.message import Message
 

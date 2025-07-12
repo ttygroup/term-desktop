@@ -5,14 +5,15 @@ use the same dynamic loading mechanism to scan for either apps or shells."""
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING # , Any
+from typing import TYPE_CHECKING  # , Any
 import os
 import importlib.util
 from pathlib import Path
 import asyncio
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
+    from term_desktop.services.windows import WindowService
 
 # Textual imports
 from textual.worker import WorkerError
@@ -24,7 +25,7 @@ from term_desktop.app_sdk import LaunchMode
 from term_desktop.app_sdk.appbase import (
     TDEAppBase,
     TDEMainWidget,
-    DefaultWindowSettings,    
+    DefaultWindowSettings,
 )
 
 
@@ -59,7 +60,7 @@ class AppService(TDEServiceBase):
 
         spec = importlib.util.find_spec("term_desktop.apps")
         if spec is not None and spec.submodule_search_locations:
-            self._directories = [Path(next(iter(spec.submodule_search_locations)))]        
+            self._directories = [Path(next(iter(spec.submodule_search_locations)))]
 
     ################
     # ~ Contract ~ #
@@ -106,14 +107,13 @@ class AppService(TDEServiceBase):
                 )
             return True
 
-
     async def stop(self) -> bool:
         self.log("Stopping App Service")
         self._processes.clear()
         self._instance_counter.clear()
         self._registered_apps.clear()
         return True
-    
+
     ####################
     # ~ External API ~ #
     ####################
@@ -139,7 +139,7 @@ class AppService(TDEServiceBase):
             dict[str, Exception]: Dictionary mapping app IDs to the exceptions raised during loading.
         """
         return self._failed_apps
-    
+
     @property
     def directories(self) -> list[Path]:
         """
@@ -149,7 +149,7 @@ class AppService(TDEServiceBase):
             list[Path]: List of directories to search for app files.
         """
         return self._directories
-    
+
     @property
     def content_instance_dict(self) -> dict[str, TDEMainWidget]:
         """Get the dictionary of main content widgets for each app ID"""
@@ -225,8 +225,8 @@ class AppService(TDEServiceBase):
         Raises:
             TypeError: If TDE_App is not a subclass of TDEAppBase.
             AssertionError: If the TDE_App is not valid (should never happen)
-        Raises:
-            RuntimeError: If a process with the given ID already exists.
+            RuntimeError: If anything goes wrong during the app launch process.
+            (examine the exception message for details)
         """
         self.log(f"Launching process for app: {TDE_App.APP_NAME}")
 
@@ -266,7 +266,8 @@ class AppService(TDEServiceBase):
             main_content = app_process.get_main_content()
             if main_content is None:
                 raise RuntimeError(
-                    f"The main_content property of {app_process.APP_NAME} must return a Widget if your app is not a Daemon"
+                    f"The main_content property of {app_process.APP_NAME} "
+                    "must return a Widget if your app is not a Daemon"
                 )
 
             # Stage 6: Create the main content instance
@@ -278,7 +279,8 @@ class AppService(TDEServiceBase):
                 ) from e
             if not isinstance(content_instance, TDEMainWidget):  # type: ignore
                 raise RuntimeError(
-                    f"The main content instance for {app_process.APP_NAME} must be a subclass of TDEMainWidget"
+                    f"The main content instance for {app_process.APP_NAME} "
+                    "must be a subclass of TDEMainWidget"
                 )
 
             # Stage 7: Store the main content instance in the dictionary
@@ -296,17 +298,16 @@ class AppService(TDEServiceBase):
             custom_window_mounts = app_process.custom_window_mounts()
             window_styles = app_process.window_styles()
 
-            #! NOTE: The Window Service has not been rebuilt yet to use
-            #! the window base
+            window_meta: WindowService.WindowMeta = {
+                "content_instance": content_instance,
+                "app_process_id": process_id,
+                "window_dict": window_settings,
+                "styles_dict": window_styles,
+                "custom_mounts": custom_window_mounts,
+                "callback_id": "main_desktop",  # This is the main desktop callback ID
+            }
 
-            await self.services_manager.window_service.create_new_window(
-                content_instance=content_instance,
-                process_id=process_id,
-                window_dict=window_settings,
-                custom_mounts=custom_window_mounts,
-                styles_dict=window_styles,
-                callback_id="main_desktop",
-            )
+            await self.services_manager.window_service.request_new_window(window_meta=window_meta)
 
         elif launch_mode == LaunchMode.FULLSCREEN:
             pass  # coming soon

@@ -2,27 +2,27 @@
 
 from __future__ import annotations
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Iterable #, Any
+from typing import TYPE_CHECKING, Iterable  # , Any
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
     from textual.app import ComposeResult
-    # from textual.screen import Screen    
+    from textual_window import Window
     from textual.widgets.directory_tree import DirEntry
 
 # Textual imports
 from textual import on, events  # , work
 from textual.widget import Widget
 from textual.message import Message
+from textual.binding import Binding
 from textual.widgets import (
-    DirectoryTree,
+    DirectoryTree
 )
 
 # from textual.binding import Binding
 # from textual.widget import Widget
 
 # Textual library imports
-from textual_window import Window
 from textual_window.switcher import WindowSwitcherScreen
 from textual_slidecontainer import SlideContainer
 
@@ -30,9 +30,6 @@ from textual_slidecontainer import SlideContainer
 # Local imports #
 #################
 from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
-from term_desktop.common import (
-    DummyScreen,
-)
 from term_desktop.common.messages import (
     ToggleStartMenu,
     ToggleExplorer,
@@ -40,12 +37,10 @@ from term_desktop.common.messages import (
     ToggleWindowSwitcher,
 )
 from term_desktop.shell.desktop import Desktop
-
 from term_desktop.shell.default.start import StartMenu
 from term_desktop.shell.default.taskbar import TaskBar
 from term_desktop.shell.default.explorer import FileExplorer, ExplorerPathBar
 from term_desktop.shell.default.appchooser import AppChooser
-
 
 
 class TDEShellBase(AceOfBase):
@@ -76,7 +71,7 @@ class TDEShellBase(AceOfBase):
     #     """
     #     # This returns an empty dictionary when not overridden.
     #     return {
-    # 
+    #
     #     }
 
     #####################
@@ -92,7 +87,7 @@ class TDEShellBase(AceOfBase):
 
     #####################
     # ~ Backend Setup ~ #
-    #####################            
+    #####################
 
     @classmethod
     def validate(cls) -> None:
@@ -108,11 +103,9 @@ class TDEShellBase(AceOfBase):
         cls.validate_stage1()
         cls.validate_stage2(required_members)
 
-
     async def kill(self) -> None:
         # N/I yet
         pass
-
 
 
 class TDEShellSession(Widget):
@@ -131,6 +124,15 @@ class TDEShellSession(Widget):
 
         # def __init__(self):
         #     super().__init__()
+
+    # BINDINGS = [
+    #     Binding("f4", "toggle_windowswitcher", "Toggle Window Switcher"),
+    #     Binding("f2", "toggle_explorer", "Toggle File Explorer"),
+    #     Binding("f1", "toggle_startmenu", "Toggle Start Menu"),
+    #     Binding("f5", "toggle_windowbar", "Toggle Task Bar"),
+    #     Binding("f12", "toggle_transparency", "Toggle Transparency"),
+    # ]
+
 
     def __init__(self, process_context: ProcessContext):
         super().__init__()
@@ -166,7 +168,7 @@ class TDEShellSession(Widget):
     async def mounting_callback(self, window: Window) -> None:
         await self.query_one(Desktop).mount(window)
 
-    # This will be called by the shell service when the shell session is initialized. 
+    # This will be called by the shell service when the shell session is initialized.
     def post_initialized(self) -> None:
         self.post_message(self.Initialized())
 
@@ -209,7 +211,7 @@ class TDEShellSession(Widget):
 
     ##################
     # ~ Properties ~ #
-    ################## 
+    ##################
 
     @property
     def process_type(self) -> ProcessType:
@@ -230,10 +232,6 @@ class TDEShellSession(Widget):
     ###############
     # ~ Actions ~ #
     ###############
-
-    def action_toggle_transparency(self) -> None:
-        self.app.ansi_color = not self.app.ansi_color
-        self.app.push_screen(DummyScreen())
 
     @on(ToggleTaskBar)
     def action_toggle_windowbar(self) -> None:
@@ -307,7 +305,3 @@ class TDEShellSession(Widget):
             path_bar.update_path(event.node.data.path)
         else:
             self.log.error("Node data is None, cannot update path.")
-
-
-
-

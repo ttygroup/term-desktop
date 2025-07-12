@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
 
 # Textual imports
 from term_desktop.services.servicebase import TDEServiceBase
@@ -58,7 +58,6 @@ class FileAssociationService(TDEServiceBase):
     ####################
     # Methods that might need to be accessed by
     # anything else in TDE, including other services.
-
 
     ################
     # ~ Internal ~ #

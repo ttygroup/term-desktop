@@ -949,13 +949,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "textual", specifier = ">=3.3.0" },
+    { name = "textual", specifier = ">=3.7.1" },
     { name = "textual-autocomplete", specifier = ">=4.0.4" },
     { name = "textual-coloromatic", specifier = ">=0.2.2" },
-    { name = "textual-hires-canvas", specifier = ">=0.8.0" },
+    { name = "textual-hires-canvas", specifier = ">=0.9.0" },
     { name = "textual-pyfiglet", specifier = ">=0.9.2" },
     { name = "textual-slidecontainer", specifier = ">=0.5.2" },
-    { name = "textual-window", specifier = ">=0.5.1" },
+    { name = "textual-window", specifier = ">=0.5.2" },
 ]
 
 [package.metadata.requires-dev]
@@ -968,7 +968,7 @@ dev = [
 
 [[package]]
 name = "textual"
-version = "3.5.0"
+version = "3.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py", extra = ["linkify", "plugins"] },
@@ -976,9 +976,9 @@ dependencies = [
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0c/63/16cdf4b9efb47366940d8315118c5c6dd6309f5eb2c159d7195b60e2e221/textual-3.5.0.tar.gz", hash = "sha256:c4a440338694672acf271c74904f1cf1e4a64c6761c056b02a561774b81a04f4", size = 1590084, upload-time = "2025-06-20T14:46:58.263Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/83/c99c252c3fad2f7010ceb476a31af042eec71da441ffeef75bb590bc2e9e/textual-3.7.1.tar.gz", hash = "sha256:a76ba0c8a6c194ef24fd5c3681ebfddca55e7127c064a014128c84fbd7f5d271", size = 1604038, upload-time = "2025-07-09T09:04:45.477Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1f/36/2597036cb80e40f71555bf59741471f7bd76ebed112f10ae0549650a12bf/textual-3.5.0-py3-none-any.whl", hash = "sha256:7c960efb70391b754e66201776793de2b26d699d51fb91f5f78401d13cec79a1", size = 688740, upload-time = "2025-06-20T14:46:56.484Z" },
+    { url = "https://files.pythonhosted.org/packages/15/f1/8929fcce6dc983f7a260d0f3ddd2a69b74ba17383dbe57a7e0a9e085e8be/textual-3.7.1-py3-none-any.whl", hash = "sha256:ab5d153f4f65e77017977fa150d0376409e0acf5f1d2e25e2e4ab9de6c0d61ff", size = 691472, upload-time = "2025-07-09T09:04:43.626Z" },
 ]
 
 [[package]]
@@ -1026,16 +1026,16 @@ wheels = [
 
 [[package]]
 name = "textual-hires-canvas"
-version = "0.8.0"
+version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "textual" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/6f/4f6830d676571f1e32cc47aef399ae9bf25b15c5047b0b23fd5595dbbca8/textual_hires_canvas-0.8.0.tar.gz", hash = "sha256:875190fd8f44a3e917289a98609447ca051de1f66713eedad57a1a1271a222dd", size = 1213059, upload-time = "2025-05-24T13:38:27.58Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/a4/b41ff52b7213d07e9cc5126be2b4caa6e3d4cc339877e45afe54276df94b/textual_hires_canvas-0.9.0.tar.gz", hash = "sha256:1facad83a4dde8273924764b1ff137f562660764cfc67987f6b97c89fd3c9ac3", size = 1213985, upload-time = "2025-07-11T20:47:04.28Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/41/afaf7e7649de3eda9a44a8a397be49aa5e4b4d86663b293e7764cf9d659a/textual_hires_canvas-0.8.0-py3-none-any.whl", hash = "sha256:18f9050682552596c062049e62d8056668b7feff58d608dca078373fb6df5fbb", size = 17135, upload-time = "2025-05-24T13:38:24.975Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/5a/d969e5ea74efc97e5ef20a3eee98120b37b6d4a2b6caeadb86568065f24e/textual_hires_canvas-0.9.0-py3-none-any.whl", hash = "sha256:95ab5511498f939b952dbd46eec2025064801d61544a6ac74939ce9811c5f5d1", size = 17577, upload-time = "2025-07-11T20:47:02.229Z" },
 ]
 
 [[package]]
@@ -1083,14 +1083,14 @@ wheels = [
 
 [[package]]
 name = "textual-window"
-version = "0.5.1"
+version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "textual" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/eb/2426ddcc06abe02ad6e33ef63cafd047a9814a8cc7a6753a5f56d32481ac/textual_window-0.5.1.tar.gz", hash = "sha256:79f961cb60adbbd2afc8a95d7414564f7fbce790d3af7b6340228ddaf64b3fe3", size = 97052, upload-time = "2025-06-29T19:32:04.805Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0a/fa/ce0ed05ed72f9d691d1c8f4475c931c1265dadacfbe5365eadc160955277/textual_window-0.5.2.tar.gz", hash = "sha256:9adfdab19af86a788885f060a75da20839f4a1ed20b793b7eb30cead4c1570d7", size = 97315, upload-time = "2025-07-11T16:41:10.774Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/98/f3416abc4c867c43031d7525f99524142851d4211f003e69923017e480d8/textual_window-0.5.1-py3-none-any.whl", hash = "sha256:f1bc4ee02c127e338cb948231911b89f84383da6da2e8aa634fdc5697258c352", size = 31169, upload-time = "2025-06-29T19:32:03.538Z" },
+    { url = "https://files.pythonhosted.org/packages/82/8a/e6602b08cd13d9453b948251dfd9cf16dea63170eaeb46fefc37889509ca/textual_window-0.5.2-py3-none-any.whl", hash = "sha256:e7f0b5aa69ac809c29128c1e57e5bc62276f9dea53d8471d1a0a1229b5ab95b4", size = 31185, upload-time = "2025-07-11T16:41:09.593Z" },
 ]
 
 [[package]]

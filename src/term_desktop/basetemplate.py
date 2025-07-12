@@ -18,7 +18,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from term_desktop.services.serviceesmanager import ServicesManager
+    from term_desktop.services.servicesmanager import ServicesManager
 
 # Textual imports
 from textual.widget import Widget
@@ -57,7 +57,6 @@ class FooBase(AceOfBase):
 
     @classmethod
     def validate(cls) -> None:
-        cls.validate()
 
         # You can also add class level attributes that must be
         # implemented by subclasses:
@@ -66,6 +65,8 @@ class FooBase(AceOfBase):
         #     "FOO_NAME": "class attribute",
         #     "FOO_ID": "class attribute",
         # }
+
+        cls.validate_stage1()
         # cls.validate_stage2(required_members)
 
 

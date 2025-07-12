@@ -10,13 +10,10 @@ if TYPE_CHECKING:
 
 # # Textual imports
 from textual.widgets import Static
+from textual.binding import Binding
+from textual import getters
 
 # from textual import on, events  # , work
-# from textual.widgets import (
-#     DirectoryTree,
-# )
-# from textual.binding import Binding
-# from textual.screen import Screen
 
 # # Textual library imports
 # from textual_window import Window, WindowSwitcher
@@ -25,6 +22,9 @@ from textual.widgets import Static
 # Local imports
 from term_desktop.screens.screenbase import TDEScreenBase, TDEScreen
 from term_desktop.shell.shellmanager import ShellManager
+from term_desktop.common import (
+    DummyScreen,
+)
 
 class MainScreenMeta(TDEScreenBase):
     """
@@ -41,6 +41,16 @@ class MainScreenMeta(TDEScreenBase):
 
 class MainScreen(TDEScreen):
 
+    shell_manager = getters.child_by_id("shell_manager", ShellManager)
+
+    BINDINGS = [
+        Binding("f4", "toggle_windowswitcher", "Toggle Window Switcher"),
+        Binding("f2", "toggle_explorer", "Toggle File Explorer"),
+        Binding("f1", "toggle_startmenu", "Toggle Start Menu"),
+        Binding("f5", "toggle_windowbar", "Toggle Task Bar"),
+        Binding("f12", "toggle_transparency", "Toggle Transparency"),
+    ]
+
     def __init__(self, process_context: ProcessContext) -> None:
         super().__init__(process_context)
         self.styles.opacity = 0.0  # Start with the screen hidden
@@ -49,7 +59,7 @@ class MainScreen(TDEScreen):
     def compose(self) -> ComposeResult:
 
         try:
-            yield ShellManager(self.services)
+            yield ShellManager(self.services, id="shell_manager")
         except Exception as e:
             yield Static(f"Error mounting shell: {e}", classes="error")
 
@@ -61,4 +71,34 @@ class MainScreen(TDEScreen):
                 1.0,
                 duration=0.3,
             )
+
         self.set_timer(0.3, animate_ready)
+
+
+    ###############
+    # ~ Actions ~ #
+    ###############
+
+    def action_toggle_transparency(self) -> None:
+        self.app.ansi_color = not self.app.ansi_color
+        self.app.push_screen(DummyScreen())
+
+    # @on(ToggleTaskBar)
+    def action_toggle_windowbar(self) -> None:
+        """Toggle the visibility of the window bar."""
+        self.shell_manager.action_toggle_windowbar()
+
+    # @on(ToggleWindowSwitcher)
+    def action_toggle_windowswitcher(self) -> None:
+        """Toggle the visibility of the window switcher."""
+        self.shell_manager.action_toggle_windowswitcher()
+
+    # @on(ToggleExplorer)
+    def action_toggle_explorer(self) -> None:
+        """Toggle the visibility of Slide Menu 1."""
+        self.shell_manager.action_toggle_explorer()
+
+    # @on(ToggleStartMenu)
+    def action_toggle_startmenu(self) -> None:
+        """Open the start menu / quick launcher."""
+        self.shell_manager.action_toggle_startmenu()
