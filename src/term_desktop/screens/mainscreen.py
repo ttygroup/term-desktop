@@ -26,6 +26,7 @@ from term_desktop.common import (
     DummyScreen,
 )
 
+
 class MainScreenMeta(TDEScreenBase):
     """
     The main screen of the Terminal Desktop Environment.
@@ -73,7 +74,6 @@ class MainScreen(TDEScreen):
             )
 
         self.set_timer(0.3, animate_ready)
-
 
     ###############
     # ~ Actions ~ #

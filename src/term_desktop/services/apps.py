@@ -14,6 +14,7 @@ import asyncio
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
     from term_desktop.services.windows import WindowService
+    from term_desktop.app_sdk import TDEAppBase
 
 # Textual imports
 from textual.worker import WorkerError
@@ -29,7 +30,7 @@ from term_desktop.app_sdk.appbase import (
 )
 
 
-class AppService(TDEServiceBase):
+class AppService(TDEServiceBase[TDEAppBase]):
 
     ################
     # ~ Messages ~ #
@@ -78,6 +79,7 @@ class AppService(TDEServiceBase):
         self.log("Starting App service")
         self._failed_apps.clear()
 
+        assert self.SERVICE_ID is not None
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._discover_apps,
             "name": "DiscoverAppsWorker",
@@ -177,6 +179,26 @@ class AppService(TDEServiceBase):
 
         asyncio.create_task(self._launch_app_runner(TDE_App))
 
+    def shutdown_app(self, app_id: str) -> None:
+        """
+        Shutdown an app by its ID.
+
+        Args:
+            app_id (str): The ID of the app to shutdown.
+        Raises:
+            KeyError: If the app with the given ID does not exist.
+        """
+        self.log(f"Shutting down app with ID: {app_id}")
+
+        if app_id not in self._processes:
+            raise KeyError(f"App with ID {app_id} does not exist.")
+
+        app_process = self._processes[app_id]
+        app_process.shutdown()
+        self._remove_process(app_id)
+        del self._content_instance_dict[app_id]
+        self.log(f"App with ID {app_id} has been shut down and removed from the AppService.")
+
     def add_directory(self, directory: Path) -> None:
         """
         Add a directory to the list of directories to search for app files.
@@ -200,6 +222,7 @@ class AppService(TDEServiceBase):
     async def _launch_app_runner(self, TDE_App: type[TDEAppBase]) -> None:
 
         assert TDE_App.APP_NAME is not None
+        assert self.SERVICE_ID is not None
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._launch_app,
             "name": "LaunchAppWorker-" + TDE_App.APP_NAME,
@@ -234,11 +257,15 @@ class AppService(TDEServiceBase):
         assert TDE_App.APP_ID is not None
 
         # Stage 1: Set available process ID
-        process_id = self._set_available_process_id(TDE_App.APP_ID)
+        instance_num = self._get_available_instance_num(TDE_App.APP_ID)
+        if instance_num == 1:
+            process_id = TDE_App.APP_ID
+        else:
+            process_id = f"{TDE_App.APP_ID}_{instance_num}"
 
         # Stage 2: Create the app process instance
         try:
-            app_process = TDE_App(process_id=process_id)
+            app_process = TDE_App(process_id=process_id, instance_num=instance_num)
         except Exception as e:
             raise RuntimeError(f"Error while creating app process '{TDE_App.__class__.__name__}': {e}") from e
 
@@ -277,7 +304,7 @@ class AppService(TDEServiceBase):
                 raise RuntimeError(
                     f"Failed to create main content instance for {app_process.APP_NAME}: {e}"
                 ) from e
-            if not isinstance(content_instance, TDEMainWidget):  # type: ignore
+            if not isinstance(content_instance, TDEMainWidget):  # type: ignore[unused-ignore]
                 raise RuntimeError(
                     f"The main content instance for {app_process.APP_NAME} "
                     "must be a subclass of TDEMainWidget"

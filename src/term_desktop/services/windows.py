@@ -25,7 +25,7 @@ from term_desktop.app_sdk import TDEMainWidget
 from term_desktop.aceofbase import ProcessType
 
 
-class WindowService(TDEServiceBase):
+class WindowService(TDEServiceBase[TDEWindowBase]):
 
     class WindowMeta(TypedDict):
         """WorkerMeta is required to run work on the ServicesManager.
@@ -78,7 +78,11 @@ class WindowService(TDEServiceBase):
         # NOTE: the window_manager stores the registered mounting callbacks.
         # as well as its own internal list of windows.
 
+        self.win_unreg_signal = window_manager.signal_window_unregistered
+        self.win_unreg_signal.subscribe(self._window_unregistered)
+        self.win_unreg_signal.log = self.log  # type: ignore
         self._window_instance_dict: dict[str, TDEWindow] = {}
+        self._window_meta_dict: dict[str, WindowService.WindowMeta] = {}
 
     ################
     # ~ Messages ~ #
@@ -158,7 +162,7 @@ class WindowService(TDEServiceBase):
         """Pass in all the ingredients to mount a window in the window manager, using the
         desired callback ID (which was set using the register_mounting_callback method).
 
-        This is used by the ProcessManager to mount windows for apps that are launched.
+        This is used by the AppService to mount windows for apps that are launched.
         """
         # For the forseeable future, there will only be one callback ID, which is the
         # main screen's callback for the desktop. I can't imagine why this might
@@ -185,6 +189,7 @@ class WindowService(TDEServiceBase):
 
     async def _mount_window_runner(self, window_meta: WindowMeta) -> None:
 
+        assert self.SERVICE_ID is not None
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._mount_window,
             "name": f"MountWindowWorker-{window_meta['app_process_id']}",
@@ -224,13 +229,19 @@ class WindowService(TDEServiceBase):
         self.log.debug(f"Creating new window attached to process ID '{app_process_id}'.")
 
         # Stage 1: Set available window process ID using the app's process ID.
-        window_process_id = self._set_available_process_id(f"{app_process_id}-window")
+        instance_num = self._get_available_instance_num(f"{app_process_id}-window")
+        if instance_num == 1:
+            window_process_id = f"{app_process_id}-window"
+        else:
+            window_process_id = f"{app_process_id}-window_{instance_num}"
+
         content_instance.set_window_process_id(window_process_id, self)
 
         # Stage 2: Create a new window process instance
         window_process = TDEWindowBase(
             app_process_id=app_process_id,
             window_process_id=window_process_id,
+            instance_num=instance_num,
         )
 
         # Stage 3: Add the window process to the process dictionary
@@ -241,6 +252,9 @@ class WindowService(TDEServiceBase):
                 f"Failed to add process {window_process_id} for window {window_process_id}. "
                 "This might be due to a duplicate process ID."
             ) from e
+        else:
+            # If successful, store the window meta in the internal dictionary
+            self._window_meta_dict[window_process_id] = window_meta
 
         # Stage 4: Create the window context dictionary
         window_context: ProcessContext = {
@@ -308,3 +322,46 @@ class WindowService(TDEServiceBase):
 
         # NOTE: Windows also do not need to be told to post an initialized message.
         # They already do it automatically when they are mounted.
+
+    def _window_unregistered(self, window: Window) -> None:
+        """Callback for when a window is unregistered from the window manager.
+        This is used to remove the window instance from the internal dictionary.
+        """
+        if not isinstance(window, TDEWindow):
+            self.log.warning(f"Unregistered window is not a TDEWindow: {window}")
+            # return
+            raise Exception(f"Unregistered window is not a TDEWindow: {window}")
+
+        window_process_id = window.window_process_id
+
+        app_process_id = self._window_meta_dict[window_process_id]["app_process_id"]
+
+        try:
+            self._remove_process(window_process_id)
+            del self._window_instance_dict[window_process_id]
+        except KeyError as e:
+            self.log.error(f"Failed to remove window process '{window_process_id}': {e}")
+            raise e
+        else:
+            self.log.debug(f"Removed window instance with ID '{window_process_id}' from window processes.")
+
+            # Only shutdown the app process if removing the window was successful.
+            self.services_manager.app_service.shutdown_app(app_process_id)
+
+    # def win_unreg_signal_error(
+    #     self,
+    #     subscriber: Any,
+    #     callback: Union[Callable[[SignalT], None], Callable[[SignalT], Awaitable[Any]]],
+    #     error: Exception,
+    # ) -> None:
+    #     """Override this to handle errors differently. This will also override the `error_raising` flag.
+
+    #     Args:
+    #         subscriber: The subscriber that raised the error.
+    #         callback: The callback that raised the error.
+    #         error: The exception that was raised.
+    #     """
+
+    #     self.log(f"Error in callback for {subscriber}: {error}")
+    #     if self._error_raising:
+    #         raise SignalError(f"Error in callback {callback} for subscriber {subscriber}: {error}") from error

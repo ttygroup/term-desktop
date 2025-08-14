@@ -60,6 +60,12 @@ class ServicesManager(Widget):
         exclusive: bool
         thread: bool
 
+    class ActiveWorkerInfo(TypedDict):
+        meta: ServicesManager.WorkerMeta
+        service_id: str
+        start_time: float
+        status: WorkerState
+
     class ServicesStarted(Message):
         """Message to indicate that all services have been started."""
 
@@ -74,17 +80,12 @@ class ServicesManager(Widget):
 
         # _active_workers is a dict that maps
         # worker IDs to tuples of (worker name, service ID, start time)
-        self._active_workers: dict[str, tuple[str, str, float]] = {}
+        # self._active_workers: dict[str, tuple[str, str, float]] = {}
+        self._active_workers: dict[str, ServicesManager.ActiveWorkerInfo] = {}
 
         # Note that Textual's built in Worker Manager also keeps an internal list of workers,
         # but this is needed to let us track workers by other metrics, such as start time
         # or the service it belongs to.
-
-        # The secondary worker stastus dict is only used to track which workers are
-        # currently running for logging purposes. It doesn't have any purpose outside of
-        # console log messages. Its only here because it was inconvenient
-        # to try to cram it into the _active_workers dict.
-        self._actively_running_workers: dict[str, WorkerState] = {}
 
         # This is a debounce flag to prevent
         # _check_running_workers from being called too frequently:
@@ -99,59 +100,44 @@ class ServicesManager(Widget):
         except Exception as e:
             raise RuntimeError(f"Failed to initialize services: {str(e)}") from e
 
-        self._services_dict: dict[str, TDEServiceBase] = {}
-        self._services_dict["shell_service"] = self.shell_service
-        self._services_dict["screen_service"] = self.screen_service
-        self._services_dict["window_service"] = self.window_service
-        self._services_dict["app_service"] = self.app_service
-
     def __rich_repr__(self) -> rich.repr.Result:
-        for service in self.services_dict.values():
-            yield f"{service.SERVICE_ID} processes:"
-            yield service.processes.keys()
+        yield f"{self._shell_service.SERVICE_ID}: \n", self._shell_service.processes.keys()
+        yield f"{self._screen_service.SERVICE_ID}: \n", self._screen_service.processes.keys()
+        yield f"{self._window_service.SERVICE_ID}: \n", self._window_service.processes.keys()
+        yield f"{self._app_service.SERVICE_ID}: \n", self._app_service.processes.keys()
 
     ##################
     # ~ Properties ~ #
     ##################
 
     @property
-    def shell_service(self):
+    def shell_service(self) -> ShellService:
         """The ShellService instance."""
         return self._shell_service
-    
-    @property
-    def screen_service(self):
-        """The ScreenService instance."""
-        return self._screen_service    
 
     @property
-    def window_service(self):
+    def screen_service(self) -> ScreenService:
+        """The ScreenService instance."""
+        return self._screen_service
+
+    @property
+    def window_service(self) -> WindowService:
         """The WindowService instance."""
         return self._window_service
-    
+
     @property
-    def app_service(self):
+    def app_service(self) -> AppService:
         """The AppService instance."""
         return self._app_service
-    
+
     @property
-    def services_dict(self) -> dict[str, TDEServiceBase]:
-        """A dictionary of all services managed by this ServicesManager."""
-        return self._services_dict
-    
-    @property
-    def active_workers(self) -> dict[str, tuple[str, str, float]]:
+    def active_workers(self) -> dict[str, ServicesManager.ActiveWorkerInfo]:
         """A dictionary of active workers with their IDs, names, service IDs, and start times."""
         return self._active_workers
-    
-    @property
-    def actively_running_workers(self) -> dict[str, WorkerState]:
-        """A dictionary of actively running workers with their IDs and states."""
-        return self._actively_running_workers
 
     ####################
     # ~ External API ~ #
-    ####################    
+    ####################
 
     def start_all_services(self) -> None:
         """Start all services."""
@@ -169,7 +155,8 @@ class ServicesManager(Widget):
         }
         self.run_worker(worker_meta=worker_meta)
 
-    def run_worker(
+    #! Override
+    def run_worker(  # type: ignore
         self,
         *args: Any,
         worker_meta: WorkerMeta,
@@ -187,6 +174,7 @@ class ServicesManager(Widget):
         Returns:
             Worker[Any]: The worker instance that was started.
         """
+
         # Validate required keys are present in worker_meta
         required_keys = {
             "work",
@@ -218,7 +206,15 @@ class ServicesManager(Widget):
         service_id = worker_meta["service_id"]
         worker_id = f"{id(worker)}"
         start_time = time()
-        self._active_workers[worker_id] = (worker_meta["name"], service_id, start_time)
+        active_worker_info: ServicesManager.ActiveWorkerInfo = {
+            "meta": worker_meta,
+            "service_id": worker_meta["service_id"],
+            "start_time": start_time,
+            "status": WorkerState.PENDING,
+        }
+
+        #! This dictionary is not actually used by anything right now. It just exists.
+        self._active_workers[worker_id] = active_worker_info
 
         # These attributes are assigned directly onto the worker instance:
         setattr(worker, "service_id", service_id)
@@ -228,7 +224,7 @@ class ServicesManager(Widget):
 
     ################
     # ~ Internal ~ #
-    ################  
+    ################
 
     async def _start_all_services(self) -> None:
         """
@@ -286,22 +282,22 @@ class ServicesManager(Widget):
 
         self.post_message(self.ServicesStarted())
 
-
     @on(Worker.StateChanged)
     def _worker_state_changed(self, event: Worker.StateChanged) -> None:
 
-        worker = event.worker  #                          type: ignore (Textual type hinting issue)
-        worker_id = getattr(worker, "worker_id", None)  # type: ignore (Textual type hinting issue)
+        worker = event.worker  #                          type: ignore[unused-ignore]
+        worker_id = getattr(worker, "worker_id", None)  # type: ignore[unused-ignore]
         assert worker_id is not None, "Worker must have a worker_id attribute."
-        if worker.state != WorkerState.RUNNING:
-            # Remove the worker from the actively running workers dict
-            if worker_id in self._actively_running_workers:
-                del self._actively_running_workers[worker_id]
+
+        # if worker.state != WorkerState.RUNNING:
+        #     # Remove the worker from the actively running workers dict
+        #     if worker_id in self.active_workers:
+        #         del self._active_workers[worker_id]
 
         if worker.state == WorkerState.RUNNING:
-            if worker_id not in self._actively_running_workers:
+            if worker_id not in self.active_workers:
                 self.log(Text.from_markup(f"[yellow]Worker {worker.name} is running."))
-                self._actively_running_workers[worker_id] = worker.state
+                self._active_workers[worker_id]["status"] = worker.state
 
             if not self._worker_check_pending:
                 self._worker_check_pending = True
@@ -325,31 +321,36 @@ class ServicesManager(Widget):
             self.log(Text.from_markup(f"[bold green]Worker {worker.name} has completed successfully."))
 
             # Remove the worker from the active workers dict
-            worker_id = getattr(worker, "worker_id")  # type: ignore (Textual type hinting issue)
+            worker_id = getattr(worker, "worker_id")  # type: ignore[unused-ignore]
             assert worker_id in self._active_workers
             del self._active_workers[worker_id]
 
     def _check_running_workers(self) -> None:
-        """Check if any workers are still running and log their status."""
 
         self._worker_check_pending = False
         self.workers_over_limit: dict[str, Worker[Any]] = {}
         at_least_one_from_service_manager = False
         if self.workers:
-
             log_string = ""
+
+            # When looking over the workers, we only want to look at workers
+            # created by TDE and not any built-in Textual workers that might run.
             for worker in self.workers:
                 worker_id = getattr(worker, "worker_id", None)
                 if worker_id is None:  # this means not from service manager
                     continue
+
+                # Now we know we have a service worker
                 at_least_one_from_service_manager = True
                 start_time = cast(float, getattr(worker, "start_time"))
                 elapsed_time = time() - start_time
                 log_string += f"{worker.name}:\n{worker.state.name} | Elapsed time: {elapsed_time:.2f}\n"
 
+                # And now we can track any over the time limit
                 if elapsed_time > 10:
                     self.workers_over_limit[worker_id] = worker
 
+            # This function restarts itself if one of the workers is ours.
             if at_least_one_from_service_manager:
                 self.log(Text.from_markup(f"[bold yellow]Worker Status[/bold yellow]\n{log_string}"))
                 self._worker_check_pending = True
@@ -358,6 +359,7 @@ class ServicesManager(Widget):
                 self.log("No active workers on the Services Manager.")
             return
 
+        # And finally cancel any over the limit
         if self.workers_over_limit:
             for worker in self.workers_over_limit.values():
                 self.log.error(f"Worker {worker.name} has exceeded the time limit")

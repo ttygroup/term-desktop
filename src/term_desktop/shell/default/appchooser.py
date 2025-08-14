@@ -46,7 +46,7 @@ class AppChooser(ModalScreen[TDEAppBase]):
             with Right():
                 yield Button("Ok", id="ok_button")
 
-    def on_click(self, event: events.Click):
+    def on_click(self, event: events.Click) -> None:
 
         children = self.query().results()
         if event.widget:

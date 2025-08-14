@@ -2,7 +2,7 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any  # , cast
+from typing import TYPE_CHECKING, Any, cast
 from pathlib import Path
 import os
 import datetime
@@ -33,14 +33,14 @@ from term_desktop.common import SpinnerWidget
 class ExplorerPathBar(SlideContainer):
     """A container for the file explorer path bar."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             slide_direction="down",
             start_open=False,
             duration=0.0,
         )
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
 
         path_input = Input(classes="-textual-compact")
         path_input.compact = True
@@ -107,7 +107,7 @@ class ExplorerResizeBar(Static):
 class InfoItem(Horizontal):
     """A horizontal container for a single piece of file information."""
 
-    def __init__(self, id: str, label: str | None = None):
+    def __init__(self, id: str, label: str | None = None) -> None:
         super().__init__(id=id)
         self.label = label
 
@@ -127,11 +127,11 @@ class InfoItem(Horizontal):
 class ExplorerInfo(Container):
     """A container for the file explorer information."""
 
-    def __init__(self, explorer: FileExplorer):
+    def __init__(self, explorer: FileExplorer) -> None:
         super().__init__()
         self.explorer = explorer
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
 
         yield InfoItem(id="name", label="Name: ")
         yield InfoItem(id="extension", label="Extension: ")
@@ -165,7 +165,7 @@ class CustomDirectoryTree(DirectoryTree):
         super().__init__(path, **kwargs)
         self.visible = False
 
-    async def _on_click(self, event: events.Click):
+    async def _on_click(self, event: events.Click) -> None:
         if event.chain == 1:
             # single click: prevent default behavior, don't select
             event.prevent_default()
@@ -183,7 +183,7 @@ class FileExplorer(SlideContainer):
         Binding("ctrl+s", "scan_directory", "Scan Directory", show=False),
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             slide_direction="left",
             start_open=False,
@@ -193,7 +193,7 @@ class FileExplorer(SlideContainer):
         self.file_or_dir_info: dict[Path, dict[str, str]] = {}  # Cache
         self.highlighted_node: TreeNode[DirEntry] | None = None
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
 
         with Horizontal():
             with Vertical():
@@ -311,7 +311,12 @@ class FileExplorer(SlideContainer):
         info_box.update_info(info_dict)  #  updates with the scanning labels
 
         size_worker = self.get_directory_size(path)
-        total_size, file_count = await size_worker.wait()
+        worker_result = await size_worker.wait()
+
+        # Must cast here because MyPy for SOME FUCKING REASON does not like this and
+        # says it cannot infer the type of worker_result. Pyright has no issue with it.
+        worker_result = cast(tuple[int, int], worker_result)  # type: ignore[unused-ignore]
+        total_size, file_count = worker_result
         formatted_size = self.format_size(total_size)
 
         info_dict["size"] = formatted_size
@@ -404,7 +409,7 @@ class FileExplorer(SlideContainer):
 
         if path.is_file():
 
-            info_dict: dict[str, str] = {
+            return {
                 "name": str(path.name),
                 "type": "file",
                 "extension": extension,
@@ -417,7 +422,7 @@ class FileExplorer(SlideContainer):
 
         elif path.is_dir():
 
-            info_dict: dict[str, str] = {
+            return {
                 "name": str(path.name),
                 "type": "directory",
                 "extension": extension,
@@ -434,5 +439,3 @@ class FileExplorer(SlideContainer):
                 "This shouldn't be possible but the type checker complains if this "
                 "check isn't here."
             )
-
-        return info_dict

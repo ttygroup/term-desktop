@@ -20,7 +20,7 @@ from term_desktop.services.servicebase import TDEServiceBase
 from term_desktop.screens import MainScreenMeta, TDEScreenBase, TDEScreen
 
 
-class ScreenService(TDEServiceBase):
+class ScreenService(TDEServiceBase[TDEScreenBase]):
 
     ################
     # ~ Messages ~ #
@@ -45,6 +45,7 @@ class ScreenService(TDEServiceBase):
 
         self._screen_instance_dict: dict[str, TDEScreen] = {}
         self._pushing_callback: Callable[[TDEScreen], Awaitable[None]] | None = None
+        self._dismissing_callback: Callable[[TDEScreen], Awaitable[None]] | None = None
 
     ################
     # ~ Contract ~ #
@@ -66,6 +67,14 @@ class ScreenService(TDEServiceBase):
     ####################
     # Methods that might need to be accessed by
     # anything else in TDE, including other services.
+
+    @property
+    def pushing_callback(self) -> Callable[[TDEScreen], Awaitable[None]] | None:
+        return self._pushing_callback
+
+    @property
+    def dismissing_callback(self) -> Callable[[TDEScreen], Awaitable[None]] | None:
+        return self._dismissing_callback
 
     def push_main_screen(self) -> None:
         """Push the main screen onto the screen stack using the registered
@@ -106,7 +115,7 @@ class ScreenService(TDEServiceBase):
         """
         if not callable(callback):
             raise ValueError(f"Callback {callback} is not callable.")
-        self.dismissing_callback = callback
+        self._dismissing_callback = callback
 
     def request_screen_push(
         self,
@@ -162,6 +171,9 @@ class ScreenService(TDEServiceBase):
         TDE_Screen: type[TDEScreenBase],
     ) -> None:
 
+        self.log(f"Running push screen worker for {TDE_Screen.SCREEN_ID}")
+
+        assert self.SERVICE_ID is not None
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._push_screen,
             "name": f"PushScreenWorker-{TDE_Screen.SCREEN_ID}",
@@ -194,16 +206,20 @@ class ScreenService(TDEServiceBase):
         """
 
         # Stage 0: Validate
-        if self._pushing_callback is None:
+        if self.pushing_callback is None:
             raise RuntimeError("No pushing callback has been registered.")
 
         # Stage 1: Set available process ID
         assert TDE_Screen.SCREEN_ID is not None
-        process_id = self._set_available_process_id(TDE_Screen.SCREEN_ID)
+        instance_num = self._get_available_instance_num(TDE_Screen.SCREEN_ID)
+        if instance_num == 1:
+            process_id = TDE_Screen.SCREEN_ID
+        else:
+            process_id = f"{TDE_Screen.SCREEN_ID}_{instance_num}"
 
         # Stage 2: Create the screen process instance
         try:
-            screen_process = TDE_Screen(process_id=process_id)
+            screen_process = TDE_Screen(process_id=process_id, instance_num=instance_num)
         except Exception as e:
             raise RuntimeError(
                 f"Error while creating screen process '{TDE_Screen.__class__.__name__}': {e}"
@@ -245,10 +261,11 @@ class ScreenService(TDEServiceBase):
 
         # Stage 8: Call the pushing callback with the new screen instance
         try:
-            await self._pushing_callback(screen_instance)
+            assert self.pushing_callback is not None
+            await self.pushing_callback(screen_instance)
         except Exception as e:
             raise RuntimeError(
-                f"Error while executing callback '{self._pushing_callback}' "
+                f"Error while executing callback '{self.pushing_callback}' "
                 f"for screen '{TDE_Screen.__class__.__name__}': {e}"
             ) from e
 

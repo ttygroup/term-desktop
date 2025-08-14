@@ -26,6 +26,7 @@ from textual.widgets import Static
 
 # Local imports
 from term_desktop.screens.screenbase import TDEScreenBase, TDEScreen
+from term_desktop.shell.shellmanager import ShellManager
 
 
 class MainScreenMeta(TDEScreenBase):
@@ -46,7 +47,7 @@ class MainScreen(TDEScreen):
     def compose(self) -> ComposeResult:
 
         try:
-            yield ShellManager(self.services)
+            yield ShellManager(self.services, id="shell_manager")
         except Exception as e:
             yield Static(f"Error mounting shell: {e}", classes="error")
 

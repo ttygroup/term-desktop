@@ -3,6 +3,7 @@
 # python standard library imports
 from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
+import sys
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -26,7 +27,7 @@ from textual.widget import AwaitMount, Widget
 #################
 from term_desktop.services import ServicesManager
 from term_desktop.screens.screenbase import TDEScreen
-from term_desktop.common.errors import TDEException
+from term_desktop.common.exceptions import TDEException
 
 # from term_desktop.app_sdk.appbase import TDEApp
 
@@ -73,12 +74,9 @@ class TermDesktop(App[None]):
             # ~ NOTE: This warning system isn't exactly a great way of handling this.
             # ~ But it'll have to do for now. We can't stop every app from pushing
             # ~ utility screens that are not TDEScreens.
-            self.log.warning(
-                "Pushing a screen that is not a TDEScreen. Ensure this is intentional "
-                "(Most likely for small utility screens like dialogs)."
-            )
+            self.log.debug("Pushing a screen that is not a TDEScreen. Ensure this is intentional ")
 
-        return super().push_screen(screen, callback, wait_for_dismiss)  # type: ignore
+        return super().push_screen(screen, callback, wait_for_dismiss)
 
     def mount(
         self,
@@ -122,8 +120,13 @@ class TermDesktop(App[None]):
     def action_log_debug_readout(self) -> None:
 
         self.log.debug(Rule("Debug Readout"))
-        self.log.debug(self.screen_stack)
-        self.log.debug(self.tree)
+        screens = "Current Screens: "
+        for screen in self.screen_stack:
+            if isinstance(screen, TDEScreen):
+                screens += f"{screen.process_id}, "
+            else:
+                screens += f"{str(screen)}, "
+        self.log.debug(screens)
         self.log.debug(self.services)
         self.log.debug(Rule("End of Debug Readout"))
 
@@ -133,5 +136,7 @@ class TermDesktop(App[None]):
 ####################
 
 
-def run():
-    TermDesktop().run()
+def run() -> None:
+    app = TermDesktop()
+    app.run()
+    sys.exit(app.return_code)

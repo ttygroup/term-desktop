@@ -25,7 +25,7 @@ from term_desktop.common.messages import ToggleStartMenu, ToggleExplorer
 
 class TaskBarButton(NoSelectStatic):
 
-    def __init__(self, content: str, id: str, window_bar: WindowBar):
+    def __init__(self, content: str, id: str, window_bar: WindowBar) -> None:
         super().__init__(content=content, id=id)
         self.window_bar = window_bar
         self.click_started_on: bool = False
@@ -50,7 +50,7 @@ class TaskBarButton(NoSelectStatic):
 
 class StartButton(TaskBarButton):
 
-    def __init__(self, window_bar: WindowBar):
+    def __init__(self, window_bar: WindowBar) -> None:
         super().__init__(
             content="🚀",
             id="start_button",
@@ -72,7 +72,7 @@ class StartButton(TaskBarButton):
 
 class ExplorerButton(TaskBarButton):
 
-    def __init__(self, window_bar: WindowBar):
+    def __init__(self, window_bar: WindowBar) -> None:
         super().__init__(
             content="📁",
             id="explorer_button",
@@ -94,7 +94,7 @@ class ExplorerButton(TaskBarButton):
 
 class CommandPaletteButton(TaskBarButton):
 
-    def __init__(self, window_bar: WindowBar):
+    def __init__(self, window_bar: WindowBar) -> None:
         super().__init__(
             content="☰",
             id="command_palette_button",
@@ -116,7 +116,7 @@ class CommandPaletteButton(TaskBarButton):
 
 class TaskBar(WindowBar):
 
-    async def on_mount(self):
+    async def on_mount(self) -> None:
         await self.mount(
             StartButton(window_bar=self),
             before=self.query_one("#windowbar_button_left"),
@@ -130,7 +130,7 @@ class TaskBar(WindowBar):
             after=self.query_one("#windowbar_button_right"),
         )
 
-    def refresh_buttons(self):
+    def refresh_buttons(self) -> None:
         """This exists to fix a graphical glitch."""
 
         self.query_one("#start_button").refresh()

@@ -9,13 +9,21 @@ if TYPE_CHECKING:
 
 # Textual imports
 from term_desktop.services.servicebase import TDEServiceBase
+from term_desktop.aceofbase import AceOfBase
 
 # Textual library imports
 
 # Local imports
 
 
-class FileAssociationService(TDEServiceBase):
+class DummyServiceProcessBase(AceOfBase):
+    """
+    This would be whatever type of process the service is controlling.
+    TDEAppBase for apps, TDEWindowBase for windows, etc.
+    """
+
+
+class FileAssociationService(TDEServiceBase[DummyServiceProcessBase]):
 
     ################
     # ~ Messages ~ #

@@ -136,7 +136,7 @@ class DictDataWidget(Widget, Generic[K, V]):
 
     store: Dict[K, V] = {}
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.display = False  # <-- This keeps it hidden in the DOM
         self.store = {}  #      <-- Initialize a fresh dictionary for each instance

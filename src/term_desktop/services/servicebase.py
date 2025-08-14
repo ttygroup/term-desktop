@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any  # , Callable, TypedDict
+from typing import TYPE_CHECKING, TypeVar, Generic, Any  # , Callable, TypedDict
 
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
@@ -15,18 +15,25 @@ if TYPE_CHECKING:
 # Local imports
 from term_desktop.aceofbase import AceOfBase
 
-# NOTE: services don't require a context dictionary.
-# The service manager is just attached directly. They can afford to be a bit
-# more tightly coupled compared to other components like apps, screens, or shells.
+# Having this be a top-level constant is maybe not the best
+# way to handle this but it'll do for now.
+VALID_PROCESS_ID_TYPES = ["APP_ID", "SCREEN_ID", "SHELL_ID", "WINDOW_ID"]
 
 
-class TDEServiceBase(AceOfBase):
+TDEProcess = TypeVar("TDEProcess", bound=AceOfBase)
 
-    SERVICE_ID = None
+
+class TDEServiceBase(AceOfBase, Generic[TDEProcess]):
+
+    # NOTE: services don't require a context dictionary on the services manager.
+    # The service manager is just attached directly. They can afford to be a bit
+    # more tightly coupled compared to other components like apps, screens, or shells.
+
+    SERVICE_ID: str | None = None
 
     def __init__(self, services_manager: ServicesManager) -> None:
         self.services_manager = services_manager
-        self._processes: dict[str, AceOfBase] = {}
+        self._processes: dict[str, TDEProcess] = {}
         self._instance_counter: dict[str, set[int]] = {}
 
     @classmethod
@@ -40,7 +47,7 @@ class TDEServiceBase(AceOfBase):
         cls.validate_stage2(required_members)
 
     @property
-    def processes(self) -> dict[str, AceOfBase]:
+    def processes(self) -> dict[str, TDEProcess]:
         """Get the currently running app processes."""
         return self._processes
 
@@ -63,12 +70,12 @@ class TDEServiceBase(AceOfBase):
     # ~ Process Methods ~ #
     #######################
 
-    def _add_process_to_dict(self, tde_process_instance: AceOfBase, process_id: str) -> None:
+    def _add_process_to_dict(self, tde_process_instance: TDEProcess, process_id: str) -> None:
         """
         Add a process instance to the service's process dictionary.
 
         Args:
-            tde_process_instance (AceOfBase): The process instance to add.
+            tde_process_instance (TDEProcess): The process instance to add.
             process_id (str): The ID of the process.
         Raises:
             RuntimeError: If a process with the given ID already exists.
@@ -83,25 +90,48 @@ class TDEServiceBase(AceOfBase):
             f"added to {self.SERVICE_ID}."
         )
 
-    def _set_available_process_id(self, plain_id: str) -> str:
+    def _remove_process(self, process_id: str) -> None:
+        """
+        Remove a process from the service's process dictionary.
+        Args:
+            process_id (str): The ID of the process to remove.
+        Raises:
+            KeyError: If the process with the given ID does not exist.
+        """
 
         try:
-            current_set = self._instance_counter[plain_id]  # get set if exists
-        except KeyError:
-            current_set: set[int] = set()  # if not, make a new set
-            self._instance_counter[plain_id] = current_set
+            process = self._processes[process_id]
+        except KeyError as e:
+            self.log(f"Process with ID {process_id} does not exist in {self.SERVICE_ID}.")
+            raise e
+        else:
+            for id_type in VALID_PROCESS_ID_TYPES:
+                plain_id = getattr(process, id_type, None)
+
+                # This is just to remove from the instance counter, if present
+                if plain_id is not None and plain_id in self._instance_counter:
+                    current_set = self._instance_counter[plain_id]
+                    instance_num = getattr(process, "instance_num", None)
+                    if instance_num is not None and instance_num in current_set:
+                        current_set.remove(instance_num)
+                        if not current_set:
+                            del self._instance_counter[plain_id]  # remove empty set
+
+            del self._processes[process_id]  # remove from dict
+            self.log(f"Process {process_id} removed from {self.SERVICE_ID}.")
+
+    def _get_available_instance_num(self, plain_id: str) -> int:
+
+        current_set = self._instance_counter.get(plain_id, set())
 
         i = 1
         while i in current_set:
             i += 1
         current_set.add(i)
-        if i == 1:
-            return f"{plain_id}"
-        else:
-            return f"{plain_id}_{i}"
+        return i
 
     #! Not used by anything yet
-    def get_process_by_id(self, process_id: str) -> AceOfBase:
+    def get_process_by_id(self, process_id: str) -> TDEProcess:
         """
         Get an app process by its ID.
 

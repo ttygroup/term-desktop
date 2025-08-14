@@ -14,10 +14,9 @@ if TYPE_CHECKING:
 from textual import on, events  # , work
 from textual.widget import Widget
 from textual.message import Message
-from textual.binding import Binding
-from textual.widgets import (
-    DirectoryTree
-)
+
+# from textual.binding import Binding
+from textual.widgets import DirectoryTree
 
 # from textual.binding import Binding
 # from textual.widget import Widget
@@ -132,7 +131,6 @@ class TDEShellSession(Widget):
     #     Binding("f5", "toggle_windowbar", "Toggle Task Bar"),
     #     Binding("f12", "toggle_transparency", "Toggle Transparency"),
     # ]
-
 
     def __init__(self, process_context: ProcessContext):
         super().__init__()
@@ -261,7 +259,7 @@ class TDEShellSession(Widget):
     ####################
 
     @on(events.Click)
-    async def handle_click(self, event: events.Click):
+    async def handle_click(self, event: events.Click) -> None:
         """This method exists to make the start menu close if someone clicks
         elsewhere on the screen while it is open"""
 

@@ -1,0 +1,31 @@
+name: CI Checks and Reports Update
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  # Manual triggering is allowed as well
+  workflow_dispatch: 
+
+jobs:
+  run-tests:
+    name: Run Tests and Generate Reports
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Setup Nox
+        uses: wntrblm/nox@2025.05.01
+
+      - name: Run Nox sessions
+        run: nox
