@@ -5,7 +5,23 @@ build/
 dist/
 wheels/
 *.egg-info
-**/Thumbs.db
-**/thumbs.db
+
+# Textual stuff
+snapshot_report.html
+
+# Virtual environments
 .venv
+
+# tooling stuff
+*_cache/
+.nox/
+
+# other
+[Tt]humbs.db
 *.drawio.bkp
+
+# AI / Agent stuff
+.crush
+CRUSH.md
+.claude
+CLAUDE.md

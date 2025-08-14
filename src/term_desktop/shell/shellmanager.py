@@ -23,7 +23,7 @@ from textual.widget import Widget
 
 class ShellManager(Widget):
 
-    def __init__(self, services: ServicesManager, id:str) -> None:
+    def __init__(self, services: ServicesManager, id: str) -> None:
         super().__init__(id=id)
         self._services = services
         self.services.shell_service.register_mounting_callback(self.mounting_callback)
@@ -34,7 +34,7 @@ class ShellManager(Widget):
     @property
     def services(self) -> ServicesManager:
         return self._services
-    
+
     def on_mount(self) -> None:
         self.load_chosen_shell()
 

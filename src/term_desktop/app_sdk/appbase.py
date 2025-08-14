@@ -9,7 +9,7 @@ from enum import Enum
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
     from term_desktop.services.windows import WindowService
-    from term_desktop.services.screens import ScreenService    
+    from term_desktop.services.screens import ScreenService
     from textual_window.window import (
         Window,
         STARTING_HORIZONTAL,
@@ -146,6 +146,13 @@ class TDEAppBase(AceOfBase):
     ICON: str = "❓"  #         should possibly just be '?'
     DESCRIPTION: str = ""
 
+    def shutdown(self) -> None:
+        """Called when the app is being shut down.
+        This can be optionally overridden to perform any cleanup tasks
+        before the app is closed.
+        """
+        pass
+
     def custom_window_settings(self) -> CustomWindowSettings:
         """Returns the settings for the window to be created.
 
@@ -191,20 +198,19 @@ class TDEAppBase(AceOfBase):
     # ~ Backend Setup ~ #
     #####################
 
-    def __init__(self, process_id: str) -> None:
-        """The ID is set by the process service when it initializes the app process.
-        It will append a number to keep track of multiple instances of the same app.
+    def __init__(self, process_id: str, instance_num: int) -> None:
+        """The ID and instance num are set by the process service when it initializes
+        the app process. It will append a number to keep track of multiple instances
+        of the same app.
 
         Note that this is not the same as window number - A single app process instance
         can still hypothetically have multiple windows managed by it.
         It is also not the same as the UID. The UID is a unique identifier
         that is set on all types of processes automatically (anything that inherits from
         a TDE Base class)."""
-        self.process_id = process_id
 
-    async def kill(self) -> None:
-        # N/I yet
-        pass
+        self.process_id = process_id
+        self.instance_num = instance_num
 
     @classmethod
     def validate(cls) -> None:

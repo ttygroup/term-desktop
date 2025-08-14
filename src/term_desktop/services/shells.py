@@ -26,7 +26,7 @@ from term_desktop.shell.shellbase import (
 )
 
 
-class ShellService(TDEServiceBase):
+class ShellService(TDEServiceBase[TDEShellBase]):
 
     ################
     # ~ Messages ~ #
@@ -75,6 +75,7 @@ class ShellService(TDEServiceBase):
         self.log("Starting ShellLoader service")
         self._failed_shells.clear()
 
+        assert self.SERVICE_ID is not None
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._discover_shells,
             "name": "DiscoverShellsWorker",
@@ -245,6 +246,7 @@ class ShellService(TDEServiceBase):
     async def _launch_shell_runner(self, TDE_Shell: type[TDEShellBase]) -> None:
 
         assert TDE_Shell.SHELL_NAME is not None
+        assert self.SERVICE_ID is not None
         worker_meta: ServicesManager.WorkerMeta = {
             "work": self._launch_shell,
             "name": "LaunchShellWorker-" + TDE_Shell.SHELL_NAME,

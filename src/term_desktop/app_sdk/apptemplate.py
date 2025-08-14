@@ -14,6 +14,7 @@ from __future__ import annotations
 # Textual imports
 from textual.widgets import Static
 from textual import events, on
+from textual.app import ComposeResult
 
 # Unused Textual imports (for reference):
 # from textual.message import Message
@@ -39,7 +40,7 @@ class TemplateContent(TDEMainWidget):
     """
     # BINDINGS = []
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
 
         yield Static("Your app content goes here", id="my_static")
 

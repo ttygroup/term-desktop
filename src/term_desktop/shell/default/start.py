@@ -2,7 +2,7 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     # from term_desktop.screens import MainScreen
@@ -16,6 +16,7 @@ from textual.app import ComposeResult
 from textual.geometry import Offset
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
+from textual._animator import Animatable  # type: ignore[unused-ignore]
 
 # from textual.message import Message
 
@@ -95,7 +96,9 @@ class StartMenu(SlideContainer):
         self.display = True
         self.animate(
             "offset",
-            value=self.taskbar_offset,  # <-- This line modified from original in SlideContainer
+            value=cast(
+                Animatable, self.taskbar_offset
+            ),  # <-- This line modified from original in SlideContainer
             duration=self.duration,
             easing=self.easing_function,
             on_complete=slide_open_completed,

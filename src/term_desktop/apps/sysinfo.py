@@ -11,6 +11,7 @@ import sys
 import platform
 
 # Textual imports
+from textual.app import ComposeResult
 from textual.widgets import Static
 
 # Unused Textual imports (for reference):
@@ -85,7 +86,7 @@ class SysInfoWidget(TDEMainWidget):
     #content { width: auto; height: auto; }         
     """
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
 
         self.static_system_info = self.get_static_system_info()
         yield Static("System Information", id="title")

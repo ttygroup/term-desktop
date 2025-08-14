@@ -27,13 +27,15 @@ class TDEScreenBase(AceOfBase):
 
     SCREEN_ID: str | None = None
 
-    def __init__(self, process_id: str) -> None:
-        """The ID is set by the screen service when it initializes the screen process.
+    def __init__(self, process_id: str, instance_num: int) -> None:
+        """The process ID is set by the screen service when it initializes the screen process.
 
         Note that this is not the same as the UID. The UID is a unique identifier
         that is set on all types of processes automatically (anything that inherits from
         a TDE Base class)."""
+
         self.process_id = process_id
+        self.instance_num = instance_num
 
     @abstractmethod
     def get_screen(self) -> type[TDEScreen]:

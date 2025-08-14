@@ -30,14 +30,18 @@ class TDEWindowBase(AceOfBase):
         self,
         app_process_id: str,
         window_process_id: str,
+        instance_num: int,
     ) -> None:
-        """The ID is set by the Window service when it initializes the Window process.
+        """window_process_id is set by the Window service when it initializes the Window process.
 
         Note that this is not the same as the UID. The UID is a unique identifier
         that is set on all types of processes automatically (anything that inherits from
         a TDE Base class)."""
+        self.WINDOW_ID = f"{app_process_id}-window"
+
         self.app_process_id = app_process_id
         self.window_process_id = window_process_id
+        self.instance_num = instance_num
 
     def get_window(self) -> type[TDEWindow]:
         """
