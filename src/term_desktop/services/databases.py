@@ -2,7 +2,7 @@
 
 # python standard library imports
 from __future__ import annotations
-from typing import TYPE_CHECKING, Sequence, Any
+from typing import TYPE_CHECKING, Sequence, Any, TypedDict  # , Callable
 if TYPE_CHECKING:
     from term_desktop.services.servicesmanager import ServicesManager
 
@@ -15,7 +15,7 @@ import sqlite3
 import platformdirs
 
 # Textual imports
-# from textual.widget import Widget
+from textual.worker import WorkerError
 
 # Textual 3rd party
 # None
@@ -38,7 +38,11 @@ class DatabaseProcess(AceOfBase):
 
     def close(self) -> None:
         """Close the database connection."""
-        self.connection.close()
+        try:
+            self.connection.close()
+        except sqlite3.DatabaseError as e:
+            self.log.error(f"Error closing database connection: {e}")
+            raise e
             
     @contextmanager
     def transaction(self):
@@ -191,11 +195,25 @@ class DatabaseProcess(AceOfBase):
 
 class DatabaseService(TDEServiceBase[DatabaseProcess]):
 
+
+    class DatabaseMeta(TypedDict):
+        """
+        Required keys:
+        - db_name: str
+        - owner: Any
+        """
+
+        db_name: str
+        owner: Any
+        
+
     #####################
     # ~ Initialzation ~ #
     #####################
 
     SERVICE_ID = "database_service"
+    
+    
 
     def __init__(self, services_manager: ServicesManager) -> None:
         """
@@ -203,7 +221,11 @@ class DatabaseService(TDEServiceBase[DatabaseProcess]):
         """
         super().__init__(services_manager)
         
-        self.storage_dir = Path(platformdirs.user_data_dir(appname="term-desktop", ensure_exists=True))
+        self.storage_dir = Path(
+            platformdirs.user_data_dir(appname="term-desktop", ensure_exists=True)
+        )
+        self.database_owners: dict[Any, list[str]] = {}
+        """Mapping of database owners to a list of their databases."""
         
 
     ################
@@ -218,8 +240,8 @@ class DatabaseService(TDEServiceBase[DatabaseProcess]):
     # anything else in TDE, including other services.
 
     async def start(self) -> bool:
-        """Start the [INSERT SERVICE NAME HERE] service."""
-        self.log("Starting Foo service")
+        """Start the Database service."""
+        self.log("Starting Database service")
 
         if True:
             return True
@@ -227,11 +249,59 @@ class DatabaseService(TDEServiceBase[DatabaseProcess]):
             return False
 
     async def stop(self) -> bool:
-        self.log("Stopping Window service")
-        if True:
-            return True
-        else:
+        self.log("Stopping Database service")
+    
+        try:    
+            for database in self.databases.values():
+                database.close()
+        except Exception:
             return False
+        else:
+            return True
+
+    @property
+    def databases(self) -> dict[str, DatabaseProcess]:
+        """Alias for processes in the Database service."""
+        return self.processes
+
+    async def request_database(self, database_meta: DatabaseMeta) -> DatabaseProcess:
+
+        db_name = database_meta["db_name"]
+        owner = database_meta["owner"]
+        
+        db_process = self.databases.get(db_name)
+        if db_process is not None:
+            # Check owner matches
+            if db_name not in self.database_owners[owner]:
+                raise RuntimeError(
+                    f"Database '{db_name}' is already owned by another owner."
+                )
+            self.log.debug(f"Database '{db_name}' already loaded. Returning existing instance.")
+            return db_process
+
+        # Database not yet loaded in memory, make new connection
+        assert self.SERVICE_ID is not None
+        worker_meta: ServicesManager.WorkerMeta = {
+            "work": self._retrieve_database,
+            "name": f"RetrieveDBWorker-{db_name}",
+            "service_id": self.SERVICE_ID,
+            "group": self.SERVICE_ID,
+            "description": f"Retreive {db_name} database.",
+            "exit_on_error": False,
+            "start": True,
+            "exclusive": False,  # numerous DB retrievals can happen simultaneously.
+            "thread": False,
+        }
+
+        worker = self.run_worker(database_meta, worker_meta=worker_meta)
+        try:
+            db_process = await worker.wait()
+        except WorkerError as e:
+            self.log.error(f"Failed to retrieve database {database_meta['db_name']}")
+            raise e
+        else:
+            return db_process
+
 
     ################
     # ~ Internal ~ #
@@ -239,9 +309,39 @@ class DatabaseService(TDEServiceBase[DatabaseProcess]):
     # Methods that are only used inside this service.
     # These should be marked with a leading underscore.
 
-    async def request_database(self, db_name: str) -> None:
-        pass
 
+    async def _retrieve_database(self, database_meta: DatabaseMeta) -> DatabaseProcess:
+
+        db_name = database_meta["db_name"]
+        owner = database_meta["owner"]
+
+        self.log.debug(f"Retreiving database '{db_name}' owned by '{owner}'.")
         
+        # Stage 1: Create database process
+        # If the file already exists, this will connect to it.
+        database_process = DatabaseProcess(self.storage_dir, db_name)
+
+        # Stage 2: Add the database process to the process dictionary
+        try:
+            self._add_process_to_dict(database_process, db_name)
+        except RuntimeError as e:
+            raise RuntimeError(
+                f"Failed to add process {database_process} for database {db_name}. "
+                "This might be due to a duplicate process ID."
+            ) from e
+        else:
+            # Stage 3: Register the owner of the database
+            if owner not in self.database_owners:
+                self.database_owners[owner] = []
+
+            if db_name in self.database_owners[owner]:
+                raise RuntimeError(
+                    f"Database '{db_name}' is already owned by '{owner}'."
+                )
+
+            self.database_owners[owner].append(db_name)
+            self.log.info(f"Database '{db_name}' successfully created and ready for use.")
+            return database_process
+
 
     ################

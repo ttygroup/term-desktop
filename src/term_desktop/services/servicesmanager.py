@@ -2,6 +2,7 @@
 
 # python standard library imports
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import TypedDict, Callable, Any, cast, TYPE_CHECKING
 from functools import partial
 from time import time
@@ -24,6 +25,8 @@ from term_desktop.services.apps import AppService
 from term_desktop.services.windows import WindowService
 from term_desktop.services.screens import ScreenService
 from term_desktop.services.shells import ShellService
+from term_desktop.services.databases import DatabaseService
+from term_desktop.services.fileassociations import FileAssociationService
 
 
 class ServicesManager(Widget):
@@ -68,9 +71,19 @@ class ServicesManager(Widget):
 
     class ServicesStarted(Message):
         """Message to indicate that all services have been started."""
-
         def __init__(self) -> None:
             super().__init__()
+            
+            
+    @dataclass(frozen=True)
+    class Services:
+        shell_service: ShellService
+        screen_service: ScreenService
+        window_service: WindowService
+        app_service: AppService
+        database_service: DatabaseService
+        file_association_service: FileAssociationService
+        
 
     def __init__(self) -> None:
         super().__init__()
@@ -93,18 +106,23 @@ class ServicesManager(Widget):
 
         # Create instances of the services
         try:
-            self._shell_service = ShellService(self)
-            self._screen_service = ScreenService(self)
-            self._window_service = WindowService(self)
-            self._app_service = AppService(self)
+            self._services = ServicesManager.Services(
+                shell_service=ShellService(self),
+                screen_service=ScreenService(self),
+                window_service=WindowService(self),
+                app_service=AppService(self),
+                database_service=DatabaseService(self),
+                file_association_service=FileAssociationService(self),
+            )
         except Exception as e:
             raise RuntimeError(f"Failed to initialize services: {str(e)}") from e
 
     def __rich_repr__(self) -> rich.repr.Result:
-        yield f"{self._shell_service.SERVICE_ID}: \n", self._shell_service.processes.keys()
-        yield f"{self._screen_service.SERVICE_ID}: \n", self._screen_service.processes.keys()
-        yield f"{self._window_service.SERVICE_ID}: \n", self._window_service.processes.keys()
-        yield f"{self._app_service.SERVICE_ID}: \n", self._app_service.processes.keys()
+        yield f"{self.shell_service.SERVICE_ID}: \n", self.shell_service.processes.keys()
+        yield f"{self.screen_service.SERVICE_ID}: \n", self.screen_service.processes.keys()
+        yield f"{self.window_service.SERVICE_ID}: \n", self.window_service.processes.keys()
+        yield f"{self.app_service.SERVICE_ID}: \n", self.app_service.processes.keys()
+        yield f"{self.database_service.SERVICE_ID}: \n", self.database_service.processes.keys()
 
     ##################
     # ~ Properties ~ #
@@ -112,23 +130,33 @@ class ServicesManager(Widget):
 
     @property
     def shell_service(self) -> ShellService:
-        """The ShellService instance."""
-        return self._shell_service
+        """Access the Shell Service."""
+        return self._services.shell_service
 
     @property
     def screen_service(self) -> ScreenService:
-        """The ScreenService instance."""
-        return self._screen_service
+        """Access the Screen Service."""
+        return self._services.screen_service
 
     @property
     def window_service(self) -> WindowService:
-        """The WindowService instance."""
-        return self._window_service
+        """Access the Window Service."""
+        return self._services.window_service
 
     @property
     def app_service(self) -> AppService:
-        """The AppService instance."""
-        return self._app_service
+        """Access the App Service."""
+        return self._services.app_service
+    
+    @property
+    def database_service(self) -> DatabaseService:
+        """Access the Database Service."""
+        return self._services.database_service
+    
+    @property
+    def fileassociation_service(self) -> FileAssociationService:
+        """Access the File Association Service."""
+        return self._services.file_association_service
 
     @property
     def active_workers(self) -> dict[str, ServicesManager.ActiveWorkerInfo]:
@@ -165,7 +193,8 @@ class ServicesManager(Widget):
         """
         Run a worker function on the services manager.
 
-        Positional and keyword arguments are passed to the worker function.
+        Positional and keyword arguments are passed to the work function
+        (the "work" key in the worker_meta dictionary).
 
         Note that this is a bridge function to the actual `run_worker` method
         of the `ServicesManager`. Services are not Textual objects and are not
@@ -231,54 +260,22 @@ class ServicesManager(Widget):
         # ? This will eventually be built out to have some kind of monitoring
         # system to watch the state of active services, stop/restart them, etc.
         """
-
-        try:
-            assert isinstance(self.shell_service, TDEServiceBase)
-            shell_service_success = await self.shell_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"ShellService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not shell_service_success:
-                raise RuntimeError("ShellService startup returned False after running.")
-            self.log("ShellService started up successfully.")
-
-        try:
-            assert isinstance(self.screen_service, TDEServiceBase)
-            screen_service_success = await self.screen_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"ScreenService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not screen_service_success:
-                raise RuntimeError("ScreenService startup returned False after running.")
-            self.log("ScreenService started up successfully.")
-
-        try:
-            assert isinstance(self.window_service, TDEServiceBase)
-            window_service_success = await self.window_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"WindowService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not window_service_success:
-                raise RuntimeError("WindowService startup returned False after running.")
-            self.log("WindowService started up successfully.")
-
-        try:
-            assert isinstance(self.app_service, TDEServiceBase)
-            app_service_success = await self.app_service.start()
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"AppService startup failed with an unexpected error: {str(e)}") from e
-        else:
-            if not app_service_success:
-                raise RuntimeError("AppService startup returned False after running.")
-            self.log("AppService started up successfully.")
+        
+        # Using the services dataclass as the source of truth for what services exist.
+        # Prevents code duplication in this method.
+        for service_name, service in self._services.__dict__.items():
+            self.log(f"Starting {service_name}...")
+            try:
+                assert isinstance(service, TDEServiceBase)
+                service_success = await service.start()
+            except RuntimeError:
+                raise
+            except Exception as e:
+                raise RuntimeError(f"{service_name} startup failed with an unexpected error: {str(e)}") from e
+            else:
+                if not service_success:
+                    raise RuntimeError(f"{service_name} startup returned False after running.")
+                self.log(f"{service_name} started up successfully.")
 
         self.post_message(self.ServicesStarted())
 

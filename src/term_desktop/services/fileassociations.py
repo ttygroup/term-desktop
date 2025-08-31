@@ -41,7 +41,7 @@ class FileAssociationService(TDEServiceBase[DummyServiceProcessBase]):
         services_manager: ServicesManager,
     ) -> None:
         """
-        Initialize the [INSERT SERVICE NAME HERE]
+        Initialize the file association service.
         """
         super().__init__(services_manager)
 
@@ -66,6 +66,18 @@ class FileAssociationService(TDEServiceBase[DummyServiceProcessBase]):
     ####################
     # Methods that might need to be accessed by
     # anything else in TDE, including other services.
+    
+    def get_associated_application(self, file_extension: str) -> str | None:
+        """
+        Get the application associated with a given file extension.
+
+        Args:
+            file_extension (str): The file extension to look up (e.g., '.txt').
+
+        Returns:
+            str | None: The associated application ID, or None if not found.
+        """
+        # Placeholder implementation
 
     ################
     # ~ Internal ~ #
