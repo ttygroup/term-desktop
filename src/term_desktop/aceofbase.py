@@ -23,13 +23,17 @@ class ProcessType(enum.Enum):
 
 class ProcessContext(TypedDict, total=True):
     """
-    'Children' that are spawned by a process will always have the
-    follow attributes passed in to them as part of their context.
+    'Children' that are spawned by a process should always have the
+    following attributes passed in to them as part of their context.
 
     This allows things like main content widgets, content screens, or shell
     sessions to 1) have access to all services directly through
     self properties, and 2) access their own unique process identifiers
     that is used to track them in the system, if they need to do so.
+    
+    Remember that that process "children" here refers to things spawned
+    by the process, but not the process itself (ie an app process
+    needs to spawn its own Textual widget).
     """
 
     process_type: ProcessType

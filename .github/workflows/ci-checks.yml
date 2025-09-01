@@ -1,4 +1,4 @@
-name: CI Checks and Reports Update
+name: CI Checks
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   run-tests:
-    name: Run Tests and Generate Reports
+    name: Run Tests
     runs-on: ubuntu-latest
 
     steps:

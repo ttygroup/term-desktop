@@ -164,7 +164,15 @@ class TDEServiceBase(AceOfBase, Generic[TDEProcess]):
         """
         Run a worker function on the services manager.
 
-        Positional and keyword arguments are passed to the worker function.
+        Positional and keyword arguments are passed to the work function, which
+        is the "work" key in the worker_meta dictionary.
+        
+        So for example if you pass in something like:
+        `worker = self.run_worker(window_meta, worker_meta=worker_meta)`
+        
+        ...then the `window_meta` dictionary will be passed to the work function
+        as its first positional argument. This uses functools.partial under the hood:
+        `partial(worker_meta["work"], *args, **kwargs)`
 
         Note that this is a bridge function to the actual `run_worker` method
         of the `ServicesManager`. Services are not Textual objects and are not
