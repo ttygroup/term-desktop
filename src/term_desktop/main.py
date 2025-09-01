@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal, Any
 import sys
 import inspect
-from time import time
+
+# from time import time
 import logging
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     # from textual.await_complete import AwaitComplete
 
 # Textual imports
-from textual import LogGroup, LogVerbosity, on # type: ignore
+from textual import LogGroup, LogVerbosity, on  # type: ignore
 from textual.app import App
 from textual.css.query import NoMatches
 
@@ -43,7 +44,7 @@ from term_desktop.common.exceptions import TDEException
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler('app.log')
+file_handler = logging.FileHandler("app.log")
 file_handler.setLevel(logging.INFO)
 
 # Create console handler (optional - for both file and console output)
@@ -51,10 +52,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
 # Create formatter
-formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(message)s', 
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
 # Add formatter to handlers
 file_handler.setFormatter(formatter)
@@ -69,6 +67,7 @@ logger.info("This is an info message")
 logger.warning("This is a warning message")
 logger.error("This is an error message")
 logger.critical("This is a critical message")
+
 
 class TermDesktop(App[None]):
 
@@ -155,7 +154,7 @@ class TermDesktop(App[None]):
             "Cannot install screens directly in Term-Desktop. "
             "Use the screen service to push screens instead."
         )
-        
+
     #! Override
     def _log(
         self,
@@ -165,7 +164,7 @@ class TermDesktop(App[None]):
         *objects: Any,
         **kwargs: Any,
     ) -> None:
-        
+
         devtools = self.devtools
         if devtools is None or not devtools.is_connected:
             return
@@ -187,9 +186,7 @@ class TermDesktop(App[None]):
             else:
                 output = " ".join(str(arg) for arg in objects)
                 if kwargs:
-                    key_values = " ".join(
-                        f"{key}={value!r}" for key, value in kwargs.items()
-                    )
+                    key_values = " ".join(f"{key}={value!r}" for key, value in kwargs.items())
                     output = f"{output} {key_values}" if output else key_values
                 #! modified next 3 lines
                 log_msg_obj = DevtoolsLog(objects, caller=_textual_calling_frame)
@@ -197,18 +194,17 @@ class TermDesktop(App[None]):
                     log_msg_obj,
                     group,
                     verbosity,
-                )                       
+                )
         except Exception as error:
             self._handle_exception(error)
-        else:
-            log_payload = {
-                "group": group.value,
-                "verbosity": verbosity.value,
-                "timestamp": int(time()),
-                "path": getattr(log_msg_obj.caller, "filename", ""),
-                "line_number": getattr(log_msg_obj.caller, "lineno", 0),
-            }
-        
+        # else:
+        #     log_payload = {
+        #         "group": group.value,
+        #         "verbosity": verbosity.value,
+        #         "timestamp": int(time()),
+        #         "path": getattr(log_msg_obj.caller, "filename", ""),
+        #         "line_number": getattr(log_msg_obj.caller, "lineno", 0),
+        #     }
 
     def action_log_debug_readout(self) -> None:
 
