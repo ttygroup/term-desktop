@@ -364,3 +364,19 @@ class ServicesManager(Widget):
             return
 
         self.log("No active workers on the Services Manager.")
+
+    async def on_unmount(self) -> None:
+        """Unmount the ServicesManager and stop all services."""
+        
+        for service_name, service in self._services.__dict__.items():
+            self.log(f"Stopping {service_name}...")
+            try:
+                service_success = await service.stop()
+            except RuntimeError:
+                raise
+            except Exception as e:
+                raise RuntimeError(f"{service_name} shutdown failed with an unexpected error: {str(e)}") from e
+            else:
+                if not service_success:
+                    raise RuntimeError(f"{service_name} shutdown returned False after running.")
+                self.log(f"{service_name} stopped successfully.")

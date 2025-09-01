@@ -22,8 +22,7 @@ from textual.worker import WorkerError
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
-from term_desktop.aceofbase import AceOfBase  # , ProcessType
-
+from term_desktop.aceofbase import AceOfBase, ProcessContext, ProcessType
 
 
 
@@ -33,6 +32,7 @@ class DatabaseProcess(AceOfBase):
         super().__init__()
         self.storage_dir = storage_dir
         self.db_name: str = db_name
+        self.process_id = db_name #     The name is the process ID in this case
         self.db_path: Path = self.storage_dir / self.db_name
         self.connection = sqlite3.connect(self.db_path)
 
@@ -224,6 +224,7 @@ class DatabaseService(TDEServiceBase[DatabaseProcess]):
         self.storage_dir = Path(
             platformdirs.user_data_dir(appname="term-desktop", ensure_exists=True)
         )
+        self.log.debug(f"Database storage directory: {self.storage_dir}")
         self.database_owners: dict[Any, list[str]] = {}
         """Mapping of database owners to a list of their databases."""
         
