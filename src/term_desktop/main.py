@@ -5,15 +5,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal, Any
 import sys
 import inspect
-
-# from time import time
+# from pathlib import Path
+# import platformdirs
 import logging
+# from pythonjsonlogger.json import JsonFormatter
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
     from textual.screen import Screen, ScreenResultType, ScreenResultCallbackType
 
     # from textual.await_complete import AwaitComplete
+
+# from ezpubsub import Signal
 
 # Textual imports
 from textual import LogGroup, LogVerbosity, on  # type: ignore
@@ -30,43 +33,13 @@ from textual.widget import AwaitMount, Widget
 # Local imports #
 #################
 from term_desktop.services import ServicesManager
+from term_desktop.services.tde_logging import DevtoolsLog, LogPayload
 from term_desktop.screens.screenbase import TDEScreen
 from term_desktop.common.exceptions import TDEException
 
 # from term_desktop.app_sdk.appbase import TDEApp
 
 
-#################
-# Logging Setup #
-#################
-
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-file_handler = logging.FileHandler("app.log")
-file_handler.setLevel(logging.INFO)
-
-# Create console handler (optional - for both file and console output)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-
-# Create formatter
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-
-# Add formatter to handlers
-file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
-
-# Add handlers to logger
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
-
-logger.debug("This is a debug message")
-logger.info("This is an info message")
-logger.warning("This is a warning message")
-logger.error("This is an error message")
-logger.critical("This is a critical message")
 
 
 class TermDesktop(App[None]):
@@ -78,14 +51,21 @@ class TermDesktop(App[None]):
         Binding("f8", "log_debug_readout", "Log app debug readout to dev console", show=False),
     ]
 
+    def on_load(self) -> None:
+        try:
+            self.services = ServicesManager()
+        except Exception as e:
+            raise e
+        
     def compose(self) -> ComposeResult:
-        self.services = ServicesManager()
         yield self.services
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
 
-        self.services.start_all_services()
-        self.log()
+        try:
+            await self.services.start_all_services()
+        except Exception as e:
+            raise e
 
     @on(ServicesManager.ServicesStarted)
     def all_services_started(self) -> None:
@@ -156,6 +136,13 @@ class TermDesktop(App[None]):
         )
 
     #! Override
+    @property
+    def _is_devtools_connected(self) -> bool:
+        # This override will trick the app into thinking the dev tools
+        # are always connected, thus keeping the logging system active.
+        return True
+
+    #! Override
     def _log(
         self,
         group: LogGroup,
@@ -166,45 +153,59 @@ class TermDesktop(App[None]):
     ) -> None:
 
         devtools = self.devtools
-        if devtools is None or not devtools.is_connected:
+
+        if len(objects) == 1 and not kwargs:
+            log_msg_obj = DevtoolsLog(objects, caller=_textual_calling_frame)
+            log_msg_str = str(objects[0])
+        else:
+            output = " ".join(str(arg) for arg in objects)
+            if kwargs:
+                key_values = " ".join(f"{key}={value!r}" for key, value in kwargs.items())
+                output = f"{output} {key_values}" if output else key_values
+            log_msg_obj = DevtoolsLog(output, caller=_textual_calling_frame)
+            log_msg_str = output
+
+        if devtools:
+            devtools.log(
+                log_msg_obj,  # type: ignore
+                group,
+                verbosity,
+            )
+
+        group_to_level: dict[int, int] = {
+            2: logging.DEBUG,
+            3: logging.INFO,
+            4: logging.WARNING,
+            5: logging.ERROR,
+            6: logging.INFO,
+        }
+        services = getattr(self, "services", None)
+        if services is None: # app is not yet fully initialized
             return
 
-        if verbosity.value > LogVerbosity.NORMAL.value and not devtools.verbose:
-            return
-
-        try:
-            from textual_dev.client import DevtoolsLog
-
-            if len(objects) == 1 and not kwargs:
-                #! modified next 3 lines
-                log_msg_obj = DevtoolsLog(objects, caller=_textual_calling_frame)
-                devtools.log(
-                    log_msg_obj,
-                    group,
-                    verbosity,
-                )
-            else:
-                output = " ".join(str(arg) for arg in objects)
-                if kwargs:
-                    key_values = " ".join(f"{key}={value!r}" for key, value in kwargs.items())
-                    output = f"{output} {key_values}" if output else key_values
-                #! modified next 3 lines
-                log_msg_obj = DevtoolsLog(objects, caller=_textual_calling_frame)
-                devtools.log(
-                    log_msg_obj,
-                    group,
-                    verbosity,
-                )
-        except Exception as error:
-            self._handle_exception(error)
-        # else:
-        #     log_payload = {
-        #         "group": group.value,
-        #         "verbosity": verbosity.value,
-        #         "timestamp": int(time()),
-        #         "path": getattr(log_msg_obj.caller, "filename", ""),
-        #         "line_number": getattr(log_msg_obj.caller, "lineno", 0),
-        #     }
+        if group.value in group_to_level:
+            self.services.logging_service(
+                level=group_to_level.get(group.value, logging.INFO),
+                msg=log_msg_str,
+                exc_info=getattr(log_msg_obj.caller, "exc_info", None),
+                extra={
+                    "session_id": id(self),
+                    "group": group.name,
+                    "path": getattr(log_msg_obj.caller, "filename", ""),
+                    "line_number": getattr(log_msg_obj.caller, "lineno", 0),
+                },
+            )
+            log_payload: LogPayload = {
+                "level": group_to_level.get(group.value, logging.INFO),
+                "msg": log_msg_str,
+                "exc_info": getattr(log_msg_obj.caller, "exc_info", None),
+                "session_id": id(self),
+                "group": group.name,
+                "path": getattr(log_msg_obj.caller, "filename", ""),
+                "line_number": getattr(log_msg_obj.caller, "lineno", 0),
+                
+            }
+            self.services.logging_service.publish_to_signal(log_payload)
 
     def action_log_debug_readout(self) -> None:
 

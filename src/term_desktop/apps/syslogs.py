@@ -29,6 +29,7 @@ from term_desktop.app_sdk import (
     LaunchMode,
     CustomWindowSettings,
 )
+from term_desktop.services.tde_logging import LogPayload
 
 
 class SysLogsMeta(TDEAppBase):
@@ -85,7 +86,26 @@ class SysLogsWidget(TDEMainWidget):
     # #title { border: solid $primary; }
     # #content { width: auto; height: auto; }
     # """
-
+    
     def compose(self) -> ComposeResult:
 
         yield RichLog(id="log_viewer")
+        
+    def on_mount(self):
+        log_viewer = self.query_one(RichLog)
+        log_memory = self.services.logging_service.memory_buffer
+        
+        # write out the memory buffer to the log viewer
+        for record in log_memory:
+            log_viewer.write(record)
+            
+        # subscribe to new log records
+        self.services.logging_service.log_signal.subscribe(self.handle_new_log)
+        
+    def handle_new_log(self, log_payload: LogPayload) -> None:
+        log_viewer = self.query_one(RichLog)
+        log_viewer.write(log_payload["msg"])
+        
+    def on_unmount(self) -> None:
+        # unsubscribe from log records
+        self.services.logging_service.log_signal.unsubscribe(self.handle_new_log)

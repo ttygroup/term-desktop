@@ -96,7 +96,9 @@ class ShellService(TDEServiceBase[TDEShellBase]):
             raise e
         else:
             if len(self.registered_shells) == 0:
-                self.log.error("Loader 'worked', but no shells were discovered. Must have malfunctioned.")
+                self.log.error(
+                    "Loader 'worked', but no shells were discovered. Must have malfunctioned."
+                )
                 return True
             else:
                 self.log.info(
@@ -180,12 +182,16 @@ class ShellService(TDEServiceBase[TDEShellBase]):
 
         # More validation should go here in the future
         if not issubclass(TDE_Shell, TDEShellBase):  # type: ignore[unused-ignore]
-            self.log.error(f"Invalid shell class: {TDE_Shell.__name__} is not a subclass of TDEShellBase")
+            self.log.error(
+                f"Invalid shell class: {TDE_Shell.__name__} is not a subclass of TDEShellBase"
+            )
             raise TypeError(f"{TDE_Shell.__name__} is not a valid TDEShellBase subclass")
 
         asyncio.create_task(self._launch_shell_runner(TDE_Shell))
 
-    def register_mounting_callback(self, callback: Callable[[TDEShellSession], Awaitable[None]]) -> None:
+    def register_mounting_callback(
+        self, callback: Callable[[TDEShellSession], Awaitable[None]]
+    ) -> None:
         """This is used by the MainScreen class to register a
         callback that will be called when a new shell is mounted.
 
@@ -201,7 +207,9 @@ class ShellService(TDEServiceBase[TDEShellBase]):
             raise ValueError(f"Callback {callback} is not callable.")
         self._mounting_callback = callback
 
-    def register_unmounting_callback(self, callback: Callable[[TDEShellSession], Awaitable[None]]) -> None:
+    def register_unmounting_callback(
+        self, callback: Callable[[TDEShellSession], Awaitable[None]]
+    ) -> None:
         """This is used by the MainScreen Class to register a
         callback that will be called when a shell is unmounted.
 
@@ -387,7 +395,9 @@ class ShellService(TDEServiceBase[TDEShellBase]):
                         continue
 
                     if path.stem in shells_to_load:
-                        self.log.error(f"Shell with name '{path.stem}' already exists. Skipping: {path}")
+                        self.log.error(
+                            f"Shell with name '{path.stem}' already exists. Skipping: {path}"
+                        )
                         self._failed_shells[path.name] = ValueError("Duplicate shell name")
                         continue
                     shells_to_load[path.stem] = shell_path
@@ -468,7 +478,9 @@ class ShellService(TDEServiceBase[TDEShellBase]):
             ShellClass = next(
                 cls
                 for _name_, cls in module.__dict__.items()
-                if isinstance(cls, type) and issubclass(cls, TDEShellBase) and cls is not TDEShellBase
+                if isinstance(cls, type)
+                and issubclass(cls, TDEShellBase)
+                and cls is not TDEShellBase
             )
         except StopIteration:
             raise ImportError(
@@ -476,6 +488,8 @@ class ShellService(TDEServiceBase[TDEShellBase]):
                 "Ensure that your main shell class inherits from TDEShellBase."
             )
         except Exception as e:
-            raise ImportError(f"Failed to retrieve shell class from module {module_name}: {str(e)}") from e
+            raise ImportError(
+                f"Failed to retrieve shell class from module {module_name}: {str(e)}"
+            ) from e
 
         return ShellClass

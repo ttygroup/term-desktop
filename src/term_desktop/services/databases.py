@@ -131,7 +131,12 @@ class DatabaseProcess(AceOfBase):
             cursor.execute(sql_delete_query, (value,))
 
     def update_column(
-        self, table_name: str, column_name: str, new_value: Any, condition_column: str, condition_value: Any
+        self,
+        table_name: str,
+        column_name: str,
+        new_value: Any,
+        condition_column: str,
+        condition_value: Any,
     ) -> None:
         """Update a column in a database table.
 
@@ -143,7 +148,9 @@ class DatabaseProcess(AceOfBase):
         `UPDATE {table_name} SET {column_name} = ? WHERE {condition_column} = ?; `
         """
 
-        sql_update_query = f"UPDATE {table_name} SET {column_name} = ? WHERE {condition_column} = ?;"
+        sql_update_query = (
+            f"UPDATE {table_name} SET {column_name} = ? WHERE {condition_column} = ?;"
+        )
 
         with self.transaction() as cursor:
             cursor.execute(sql_update_query, (new_value, condition_value))
@@ -212,8 +219,7 @@ class DatabaseService(TDEServiceBase[DatabaseProcess]):
         """
         super().__init__(services_manager)
 
-        self.storage_dir = Path(platformdirs.user_data_dir(appname="term-desktop", ensure_exists=True))
-        self.log.debug(f"Database storage directory: {self.storage_dir}")
+        self.storage_dir = self.services_manager.storage_dir / "databases"
         self.database_owners: dict[Any, list[str]] = {}
         """Mapping of database owners to a list of their databases."""
 
@@ -231,6 +237,7 @@ class DatabaseService(TDEServiceBase[DatabaseProcess]):
     async def start(self) -> bool:
         """Start the Database service."""
         self.log("Starting Database service")
+        self.log.debug(f"Database storage directory: {self.storage_dir}")
 
         if True:
             return True

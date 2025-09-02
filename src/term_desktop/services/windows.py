@@ -178,7 +178,9 @@ class WindowService(TDEServiceBase[TDEWindowBase]):
             )
             raise TypeError(f"{content_instance.__name__} is not a valid TDEMainWidget subclass")
         if callback_id not in self.window_manager.mounting_callbacks:
-            raise ValueError(f"Callback ID '{callback_id}' is not registered in the window manager.")
+            raise ValueError(
+                f"Callback ID '{callback_id}' is not registered in the window manager."
+            )
 
         asyncio.create_task(self._mount_window_runner(window_meta))
 
@@ -343,7 +345,9 @@ class WindowService(TDEServiceBase[TDEWindowBase]):
             self.log.error(f"Failed to remove window process '{window_process_id}': {e}")
             raise e
         else:
-            self.log.debug(f"Removed window instance with ID '{window_process_id}' from window processes.")
+            self.log.debug(
+                f"Removed window instance with ID '{window_process_id}' from window processes."
+            )
 
             # Only shutdown the app process if removing the window was successful.
             self.services_manager.app_service.shutdown_app(app_process_id)

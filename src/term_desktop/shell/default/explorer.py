@@ -204,7 +204,9 @@ class FileExplorer(SlideContainer):
                 scan_button = Button("Scan Directory (ctrl+s)", id="scan_directory")
                 scan_button.compact = True
                 yield scan_button
-                scan_spinner = SpinnerWidget(text="Scanning...", id="scan_spinner", mount_running=False)
+                scan_spinner = SpinnerWidget(
+                    text="Scanning...", id="scan_spinner", mount_running=False
+                )
                 scan_spinner.display = False
                 yield scan_spinner
             yield ExplorerResizeBar(self)

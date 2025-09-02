@@ -11,6 +11,7 @@ license = { text = "MIT" }
 keywords = ["python", "textual", "tui", "window", "desktop", "shell", "multiplexer", "terminal", "cli", "command-line"]
 dependencies = [
     "ezpubsub>=0.2.0",
+    "python-json-logger>=3.3.0",
     "textual>=5.3.0",
     "textual-autocomplete>=4.0.4",
     "textual-coloromatic>=1.0.0",
@@ -54,7 +55,7 @@ build-backend = "hatchling.build"
 term-desktop = "term_desktop.main:run"
 
 [tool.black]
-line-length = 110
+line-length = 100
 
 [tool.mypy]
 pretty = true

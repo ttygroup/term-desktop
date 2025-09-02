@@ -100,7 +100,9 @@ class AppService(TDEServiceBase[TDEAppBase]):
             raise e
         else:
             if len(self.registered_apps) == 0:
-                self.log.error("Loader 'worked', but no apps were discovered. Must have malfunctioned.")
+                self.log.error(
+                    "Loader 'worked', but no apps were discovered. Must have malfunctioned."
+                )
                 return True
             else:
                 self.log.info(
@@ -267,7 +269,9 @@ class AppService(TDEServiceBase[TDEAppBase]):
         try:
             app_process = TDE_App(process_id=process_id, instance_num=instance_num)
         except Exception as e:
-            raise RuntimeError(f"Error while creating app process '{TDE_App.__class__.__name__}': {e}") from e
+            raise RuntimeError(
+                f"Error while creating app process '{TDE_App.__class__.__name__}': {e}"
+            ) from e
 
         # Stage 3: Add the app process to the process dictionary
         try:
@@ -317,7 +321,10 @@ class AppService(TDEServiceBase[TDEAppBase]):
             # Custom settings will override the default settings
             default_window_settings = app_process.default_window_settings
             custom_window_settings = app_process.custom_window_settings()
-            window_settings: DefaultWindowSettings = {**default_window_settings, **custom_window_settings}
+            window_settings: DefaultWindowSettings = {
+                **default_window_settings,
+                **custom_window_settings,
+            }
 
             # The custom window mounts should be a static set of decorative or utility
             # widgets. The window mounts and the window styles will be loaded from the
@@ -389,13 +396,17 @@ class AppService(TDEServiceBase[TDEAppBase]):
                                 app_tuple = ("dir", path)
                                 break
                         if app_tuple is None:
-                            self.log.warning(f"Directory {path} does not contain a valid app file. Skipping.")
+                            self.log.warning(
+                                f"Directory {path} does not contain a valid app file. Skipping."
+                            )
                             continue
                     else:
                         continue
 
                     if path.stem in apps_to_load:
-                        self.log.error(f"App with name '{path.stem}' already exists. Skipping: {path}")
+                        self.log.error(
+                            f"App with name '{path.stem}' already exists. Skipping: {path}"
+                        )
                         self._failed_apps[path.name] = ValueError("Duplicate app name")
                         continue
                     apps_to_load[path.stem] = app_tuple
@@ -488,6 +499,8 @@ class AppService(TDEServiceBase[TDEAppBase]):
                 "Ensure that your main app class inherits from TDEAppBase."
             )
         except Exception as e:
-            raise ImportError(f"Failed to retrieve app class from module {module_name}: {str(e)}") from e
+            raise ImportError(
+                f"Failed to retrieve app class from module {module_name}: {str(e)}"
+            ) from e
 
         return AppClass

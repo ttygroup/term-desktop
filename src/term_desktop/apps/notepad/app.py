@@ -225,7 +225,9 @@ class NotepadMenu(ModalScreen[None]):
         for button in buttons:
             button.compact = True
 
-        menu.offset = Offset(self.menu_offset.x, self.menu_offset.y + 1)  # +1 to go below the button
+        menu.offset = Offset(
+            self.menu_offset.x, self.menu_offset.y + 1
+        )  # +1 to go below the button
 
     def on_mouse_up(self) -> None:
 

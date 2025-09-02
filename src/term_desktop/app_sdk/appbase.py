@@ -275,7 +275,7 @@ class TDEMainWidget(Widget):
 
     #! NOTE: NOT FOR SCREENS, STILL NEED TO BUILD SUPPORT FOR THEM.
 
-    The app_context is passed in by the Process Manager when it initializes the app.
+    The app_context is passed in by the App Service when it initializes the app.
     """
 
     class Initialized(Message):
@@ -286,7 +286,7 @@ class TDEMainWidget(Widget):
             self.window = window
 
     def __init__(self, process_context: ProcessContext):
-        """The process context is passed in by the Process Manager when it initializes the app.
+        """The process context is passed in by the App Service when it initializes the app.
         It contains the process type, process ID, process UID, and services manager.
 
         If you override this method, you must have an argument named `process_context`

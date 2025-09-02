@@ -18,6 +18,8 @@ class ProcessType(enum.Enum):
     SCREEN = "screen"
     SHELL = "shell"
     WINDOW = "window"
+    DATABASE = "database"
+    LOGGER = "logger"
     # Add more process types as needed.
 
 
@@ -30,7 +32,7 @@ class ProcessContext(TypedDict, total=True):
     sessions to 1) have access to all services directly through
     self properties, and 2) access their own unique process identifiers
     that is used to track them in the system, if they need to do so.
-    
+
     Remember that that process "children" here refers to things spawned
     by the process, but not the process itself (ie an app process
     needs to spawn its own Textual widget).
@@ -119,4 +121,6 @@ class AceOfBase(ABC):
                 raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
             else:
                 if attr is None:
-                    raise NotImplementedError(f"{cls.__name__} must implement {attr_name} ({kind}).")
+                    raise NotImplementedError(
+                        f"{cls.__name__} must implement {attr_name} ({kind})."
+                    )
