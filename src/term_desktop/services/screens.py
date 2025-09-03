@@ -102,7 +102,9 @@ class ScreenService(TDEServiceBase[TDEScreenBase]):
             raise ValueError(f"Callback {callback} is not callable.")
         self._pushing_callback = callback
 
-    def register_dismissing_callback(self, callback: Callable[[TDEScreen], Awaitable[None]]) -> None:
+    def register_dismissing_callback(
+        self, callback: Callable[[TDEScreen], Awaitable[None]]
+    ) -> None:
         """This is used by the Uber App Class (TermDesktop) to register a
         callback that will be called when a screen is dismissed.
 
@@ -135,7 +137,9 @@ class ScreenService(TDEServiceBase[TDEScreenBase]):
 
         # Stage 0: Validate
         if not issubclass(TDE_Screen, TDEScreenBase):  # type: ignore[unused-ignore]
-            self.log.error(f"Invalid app class: {TDE_Screen.__name__} is not a subclass of TDEAppBase")
+            self.log.error(
+                f"Invalid app class: {TDE_Screen.__name__} is not a subclass of TDEAppBase"
+            )
             raise TypeError(f"{TDE_Screen.__name__} is not a valid TDEAppBase subclass")
         if TDE_Screen.SCREEN_ID is None:
             self.log.error(f"Invalid screen class: {TDE_Screen.__name__} has no SCREEN_ID defined.")
@@ -254,7 +258,9 @@ class ScreenService(TDEServiceBase[TDEScreenBase]):
         try:
             screen_instance = tde_screen(process_context=screen_context)
         except Exception as e:
-            raise RuntimeError(f"Failed to create screen instance for {TDE_Screen.SCREEN_ID}: {e}") from e
+            raise RuntimeError(
+                f"Failed to create screen instance for {TDE_Screen.SCREEN_ID}: {e}"
+            ) from e
 
         # Stage 7: Store the screen instance in the dictionary
         self._screen_instance_dict[process_id] = screen_instance

@@ -66,7 +66,7 @@ class FileAssociationService(TDEServiceBase[DummyServiceProcessBase]):
     ####################
     # Methods that might need to be accessed by
     # anything else in TDE, including other services.
-    
+
     def get_associated_application(self, file_extension: str) -> str | None:
         """
         Get the application associated with a given file extension.

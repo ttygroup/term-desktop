@@ -104,7 +104,9 @@ class SysInfoWidget(TDEMainWidget):
 
         return {
             "OS": f"{uname.system} {uname.release}",
-            "Freedesktop_os label": str(platform.freedesktop_os_release().get("PRETTY_NAME", "Unknown")),
+            "Freedesktop_os label": str(
+                platform.freedesktop_os_release().get("PRETTY_NAME", "Unknown")
+            ),
             "Machine": uname.machine,
             "Architecture": platform.architecture()[0],
             "CPU Model": self.get_cpu_model(),

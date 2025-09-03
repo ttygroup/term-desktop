@@ -6,11 +6,15 @@ from dataclasses import dataclass
 from typing import TypedDict, Callable, Any, cast, TYPE_CHECKING
 from functools import partial
 from time import time
+from pathlib import Path
+import platformdirs
 
 if TYPE_CHECKING:
     import rich.repr
 
-# from uuid import uuid4
+# from logging import Logger
+# from ezpubsub import Signal
+
 
 # Textual imports
 from textual import on
@@ -21,6 +25,7 @@ from rich.text import Text
 
 # Local imports
 from term_desktop.services.servicebase import TDEServiceBase
+from term_desktop.services.tde_logging import LoggingService
 from term_desktop.services.apps import AppService
 from term_desktop.services.windows import WindowService
 from term_desktop.services.screens import ScreenService
@@ -71,25 +76,33 @@ class ServicesManager(Widget):
 
     class ServicesStarted(Message):
         """Message to indicate that all services have been started."""
+
         def __init__(self) -> None:
             super().__init__()
-            
-            
+
     @dataclass(frozen=True)
     class Services:
+        logging_service: LoggingService
         shell_service: ShellService
         screen_service: ScreenService
         window_service: WindowService
         app_service: AppService
         database_service: DatabaseService
         file_association_service: FileAssociationService
-        
+
+    initialized = False
 
     def __init__(self) -> None:
         super().__init__()
 
         # display = False to make this a non-visible background widget.
         self.display = False
+
+        self.storage_dir = Path(
+            platformdirs.user_data_dir(appname="term-desktop", ensure_exists=True)
+        )
+        """ServicesManager storage directory. Use this as the path for any services
+        that need to store data on disk."""
 
         # _active_workers is a dict that maps
         # worker IDs to tuples of (worker name, service ID, start time)
@@ -104,29 +117,77 @@ class ServicesManager(Widget):
         # _check_running_workers from being called too frequently:
         self._worker_check_pending = False
 
-        # Create instances of the services
         try:
-            self._services = ServicesManager.Services(
-                shell_service=ShellService(self),
-                screen_service=ScreenService(self),
-                window_service=WindowService(self),
-                app_service=AppService(self),
-                database_service=DatabaseService(self),
-                file_association_service=FileAssociationService(self),
-            )
+            logging_service = LoggingService(self)
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize services: {str(e)}") from e
+            raise RuntimeError(f"Failed to initialize LoggingService: {str(e)}") from e
+
+        try:
+            shell_service = ShellService(self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize ShellService: {str(e)}") from e
+
+        try:
+            screen_service = ScreenService(self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize ScreenService: {str(e)}") from e
+
+        try:
+            window_service = WindowService(self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize WindowService: {str(e)}") from e
+
+        try:
+            app_service = AppService(self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize AppService: {str(e)}") from e
+
+        try:
+            database_service = DatabaseService(self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize DatabaseService: {str(e)}") from e
+
+        try:
+            file_association_service = FileAssociationService(self)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize FileAssociationService: {str(e)}") from e
+
+        self._services = ServicesManager.Services(
+            logging_service=logging_service,
+            shell_service=shell_service,
+            screen_service=screen_service,
+            window_service=window_service,
+            app_service=app_service,
+            database_service=database_service,
+            file_association_service=file_association_service,
+        )
+
+        self.initialized = True
 
     def __rich_repr__(self) -> rich.repr.Result:
-        yield f"{self.shell_service.SERVICE_ID}: \n", self.shell_service.processes.keys()
-        yield f"{self.screen_service.SERVICE_ID}: \n", self.screen_service.processes.keys()
-        yield f"{self.window_service.SERVICE_ID}: \n", self.window_service.processes.keys()
-        yield f"{self.app_service.SERVICE_ID}: \n", self.app_service.processes.keys()
-        yield f"{self.database_service.SERVICE_ID}: \n", self.database_service.processes.keys()
+        if self.initialized:
+            yield f"{self.logging_service.SERVICE_ID}: \n", self.logging_service.processes.keys()
+            yield f"{self.shell_service.SERVICE_ID}: \n", self.shell_service.processes.keys()
+            yield f"{self.screen_service.SERVICE_ID}: \n", self.screen_service.processes.keys()
+            yield f"{self.window_service.SERVICE_ID}: \n", self.window_service.processes.keys()
+            yield f"{self.app_service.SERVICE_ID}: \n", self.app_service.processes.keys()
+            yield f"{self.database_service.SERVICE_ID}: \n", self.database_service.processes.keys()
+        else:
+            yield "ServicesManager not initialized"
 
     ##################
     # ~ Properties ~ #
     ##################
+
+    @property
+    def services(self) -> Services:
+        """Access all services."""
+        return self._services
+
+    @property
+    def logging_service(self) -> LoggingService:
+        """Access the Logging Service."""
+        return self._services.logging_service
 
     @property
     def shell_service(self) -> ShellService:
@@ -147,12 +208,12 @@ class ServicesManager(Widget):
     def app_service(self) -> AppService:
         """Access the App Service."""
         return self._services.app_service
-    
+
     @property
     def database_service(self) -> DatabaseService:
         """Access the Database Service."""
         return self._services.database_service
-    
+
     @property
     def fileassociation_service(self) -> FileAssociationService:
         """Access the File Association Service."""
@@ -160,14 +221,15 @@ class ServicesManager(Widget):
 
     @property
     def active_workers(self) -> dict[str, ServicesManager.ActiveWorkerInfo]:
-        """A dictionary of active workers with their IDs, names, service IDs, and start times."""
+        """A dictionary of active workers with their IDs, names, service IDs,
+        and start times."""
         return self._active_workers
 
     ####################
     # ~ External API ~ #
     ####################
 
-    def start_all_services(self) -> None:
+    async def start_all_services(self) -> None:
         """Start all services."""
 
         worker_meta: ServicesManager.WorkerMeta = {
@@ -181,7 +243,11 @@ class ServicesManager(Widget):
             "exclusive": True,
             "thread": False,
         }
-        self.run_worker(worker_meta=worker_meta)
+        try:
+            worker: Worker[bool] = self.run_worker(worker_meta=worker_meta)
+            await worker.wait()
+        except Exception as e:
+            raise e
 
     #! Override
     def run_worker(  # type: ignore
@@ -260,18 +326,19 @@ class ServicesManager(Widget):
         # ? This will eventually be built out to have some kind of monitoring
         # system to watch the state of active services, stop/restart them, etc.
         """
-        
+
         # Using the services dataclass as the source of truth for what services exist.
         # Prevents code duplication in this method.
         for service_name, service in self._services.__dict__.items():
-            self.log(f"Starting {service_name}...")
             try:
                 assert isinstance(service, TDEServiceBase)
                 service_success = await service.start()
             except RuntimeError:
                 raise
             except Exception as e:
-                raise RuntimeError(f"{service_name} startup failed with an unexpected error: {str(e)}") from e
+                raise RuntimeError(
+                    f"{service_name} startup failed with an unexpected error: {str(e)}"
+                ) from e
             else:
                 if not service_success:
                     raise RuntimeError(f"{service_name} startup returned False after running.")
@@ -302,7 +369,9 @@ class ServicesManager(Widget):
 
         elif worker.state == WorkerState.ERROR:
             self.log.error(
-                Text.from_markup(f"[bold red]Worker {worker.name} encountered an error: {worker.error!r}")
+                Text.from_markup(
+                    f"[bold red]Worker {worker.name} encountered an error: {worker.error!r}"
+                )
             )
 
             # In the future this should be replaced by a proper error screen.
@@ -315,7 +384,9 @@ class ServicesManager(Widget):
             del self._active_workers[worker_id]
 
         elif worker.state == WorkerState.SUCCESS:
-            self.log(Text.from_markup(f"[bold green]Worker {worker.name} has completed successfully."))
+            self.log(
+                Text.from_markup(f"[bold green]Worker {worker.name} has completed successfully.")
+            )
 
             # Remove the worker from the active workers dict
             worker_id = getattr(worker, "worker_id")  # type: ignore[unused-ignore]
@@ -341,7 +412,9 @@ class ServicesManager(Widget):
                 at_least_one_from_service_manager = True
                 start_time = cast(float, getattr(worker, "start_time"))
                 elapsed_time = time() - start_time
-                log_string += f"{worker.name}:\n{worker.state.name} | Elapsed time: {elapsed_time:.2f}\n"
+                log_string += (
+                    f"{worker.name}:\n{worker.state.name} | Elapsed time: {elapsed_time:.2f}\n"
+                )
 
                 # And now we can track any over the time limit
                 if elapsed_time > 10:
@@ -349,7 +422,9 @@ class ServicesManager(Widget):
 
             # This function restarts itself if one of the workers is ours.
             if at_least_one_from_service_manager:
-                self.log(Text.from_markup(f"[bold yellow]Worker Status[/bold yellow]\n{log_string}"))
+                self.log(
+                    Text.from_markup(f"[bold yellow]Worker Status[/bold yellow]\n{log_string}")
+                )
                 self._worker_check_pending = True
                 self.set_timer(3, self._check_running_workers)
             else:
@@ -367,16 +442,24 @@ class ServicesManager(Widget):
 
     async def on_unmount(self) -> None:
         """Unmount the ServicesManager and stop all services."""
-        
+
         for service_name, service in self._services.__dict__.items():
-            self.log(f"Stopping {service_name}...")
-            try:
-                service_success = await service.stop()
-            except RuntimeError:
-                raise
-            except Exception as e:
-                raise RuntimeError(f"{service_name} shutdown failed with an unexpected error: {str(e)}") from e
-            else:
-                if not service_success:
-                    raise RuntimeError(f"{service_name} shutdown returned False after running.")
-                self.log(f"{service_name} stopped successfully.")
+            if service_name != "logging_service":
+                try:
+                    service_success = await service.stop()
+                except RuntimeError:
+                    raise
+                except Exception as e:
+                    raise RuntimeError(
+                        f"{service_name} shutdown failed with an unexpected error: {str(e)}"
+                    ) from e
+                else:
+                    if not service_success:
+                        raise RuntimeError(f"{service_name} shutdown returned False after running.")
+                    self.log(f"{service_name} stopped successfully.")
+
+        # stop logging service last
+        try:
+            await self.logging_service.stop()
+        except Exception as e:
+            raise e

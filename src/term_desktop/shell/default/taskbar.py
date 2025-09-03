@@ -31,7 +31,9 @@ class TaskBarButton(NoSelectStatic):
         self.click_started_on: bool = False
 
         if not hasattr(self, "on_mouse_up"):
-            raise NotImplementedError(f"{self.__class__.__name__} must implement the on_mouse_up method.")
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must implement the on_mouse_up method."
+            )
 
     def on_mouse_down(self, event: events.MouseDown) -> None:
 

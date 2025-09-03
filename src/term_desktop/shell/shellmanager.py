@@ -81,3 +81,8 @@ class ShellManager(Widget):
         """Open the start menu / quick launcher."""
         if self.current_shell is not None:
             self.current_shell.action_toggle_startmenu()
+
+    def action_toggle_bg_animation(self) -> None:
+        """Toggle the background animation."""
+        if self.current_shell is not None:
+            self.current_shell.action_toggle_bg_animation()
