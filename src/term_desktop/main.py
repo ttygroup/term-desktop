@@ -5,9 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal, Any
 import sys
 import inspect
+import time
+
 # from pathlib import Path
 # import platformdirs
 import logging
+
 # from pythonjsonlogger.json import JsonFormatter
 
 if TYPE_CHECKING:
@@ -33,13 +36,11 @@ from textual.widget import AwaitMount, Widget
 # Local imports #
 #################
 from term_desktop.services import ServicesManager
-from term_desktop.services.tde_logging import DevtoolsLog, LogPayload
+from term_desktop.services.tde_logging import DevtoolsLog
 from term_desktop.screens.screenbase import TDEScreen
 from term_desktop.common.exceptions import TDEException
 
 # from term_desktop.app_sdk.appbase import TDEApp
-
-
 
 
 class TermDesktop(App[None]):
@@ -56,7 +57,7 @@ class TermDesktop(App[None]):
             self.services = ServicesManager()
         except Exception as e:
             raise e
-        
+
     def compose(self) -> ComposeResult:
         yield self.services
 
@@ -180,11 +181,11 @@ class TermDesktop(App[None]):
             6: logging.INFO,
         }
         services = getattr(self, "services", None)
-        if services is None: # app is not yet fully initialized
+        if services is None:  # app is not yet fully initialized
             return
 
         if group.value in group_to_level:
-            self.services.logging_service(
+            self.services.logging_service.log(
                 level=group_to_level.get(group.value, logging.INFO),
                 msg=log_msg_str,
                 exc_info=getattr(log_msg_obj.caller, "exc_info", None),
@@ -193,19 +194,9 @@ class TermDesktop(App[None]):
                     "group": group.name,
                     "path": getattr(log_msg_obj.caller, "filename", ""),
                     "line_number": getattr(log_msg_obj.caller, "lineno", 0),
+                    "timestamp": time.time(),
                 },
             )
-            log_payload: LogPayload = {
-                "level": group_to_level.get(group.value, logging.INFO),
-                "msg": log_msg_str,
-                "exc_info": getattr(log_msg_obj.caller, "exc_info", None),
-                "session_id": id(self),
-                "group": group.name,
-                "path": getattr(log_msg_obj.caller, "filename", ""),
-                "line_number": getattr(log_msg_obj.caller, "lineno", 0),
-                
-            }
-            self.services.logging_service.publish_to_signal(log_payload)
 
     def action_log_debug_readout(self) -> None:
 

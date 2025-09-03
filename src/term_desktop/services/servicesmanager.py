@@ -8,6 +8,7 @@ from functools import partial
 from time import time
 from pathlib import Path
 import platformdirs
+
 if TYPE_CHECKING:
     import rich.repr
 
@@ -88,7 +89,7 @@ class ServicesManager(Widget):
         app_service: AppService
         database_service: DatabaseService
         file_association_service: FileAssociationService
-        
+
     initialized = False
 
     def __init__(self) -> None:
@@ -115,52 +116,52 @@ class ServicesManager(Widget):
         # This is a debounce flag to prevent
         # _check_running_workers from being called too frequently:
         self._worker_check_pending = False
-        
+
         try:
             logging_service = LoggingService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize LoggingService: {str(e)}") from e
-        
+
         try:
             shell_service = ShellService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize ShellService: {str(e)}") from e
-        
+
         try:
             screen_service = ScreenService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize ScreenService: {str(e)}") from e
-        
+
         try:
             window_service = WindowService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize WindowService: {str(e)}") from e
-        
+
         try:
             app_service = AppService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize AppService: {str(e)}") from e
-        
+
         try:
             database_service = DatabaseService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize DatabaseService: {str(e)}") from e
-        
+
         try:
             file_association_service = FileAssociationService(self)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize FileAssociationService: {str(e)}") from e
-        
+
         self._services = ServicesManager.Services(
-            logging_service = logging_service,
-            shell_service = shell_service,
-            screen_service = screen_service,
-            window_service = window_service,
-            app_service = app_service,
-            database_service = database_service,
-            file_association_service = file_association_service,
-        )  
-        
+            logging_service=logging_service,
+            shell_service=shell_service,
+            screen_service=screen_service,
+            window_service=window_service,
+            app_service=app_service,
+            database_service=database_service,
+            file_association_service=file_association_service,
+        )
+
         self.initialized = True
 
     def __rich_repr__(self) -> rich.repr.Result:
@@ -177,12 +178,12 @@ class ServicesManager(Widget):
     ##################
     # ~ Properties ~ #
     ##################
-    
+
     @property
     def services(self) -> Services:
         """Access all services."""
         return self._services
-    
+
     @property
     def logging_service(self) -> LoggingService:
         """Access the Logging Service."""
@@ -320,7 +321,7 @@ class ServicesManager(Widget):
     # ~ Internal ~ #
     ################
 
-    async def _start_all_services(self) -> bool | None:
+    async def _start_all_services(self) -> None:
         """
         # ? This will eventually be built out to have some kind of monitoring
         # system to watch the state of active services, stop/restart them, etc.
@@ -342,7 +343,7 @@ class ServicesManager(Widget):
                 if not service_success:
                     raise RuntimeError(f"{service_name} startup returned False after running.")
                 self.log(f"{service_name} started up successfully.")
-        
+
         self.post_message(self.ServicesStarted())
 
     @on(Worker.StateChanged)
@@ -456,7 +457,7 @@ class ServicesManager(Widget):
                     if not service_success:
                         raise RuntimeError(f"{service_name} shutdown returned False after running.")
                     self.log(f"{service_name} stopped successfully.")
-        
+
         # stop logging service last
         try:
             await self.logging_service.stop()

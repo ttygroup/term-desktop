@@ -14,7 +14,7 @@ import sqlite3
 # from importlib import resources
 
 # python 3rd party
-import platformdirs
+# import platformdirs
 
 # Textual imports
 from textual.worker import WorkerError

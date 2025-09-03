@@ -103,3 +103,8 @@ class Desktop(Container):
                 horizontal=True,
                 gradient_quality=30,
             )
+            
+    def toggle_bg_animation(self):
+        for figlet in self.query(FigletWidget):
+            figlet.animated = not figlet.animated
+            # figlet.refresh()

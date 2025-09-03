@@ -49,6 +49,7 @@ class MainScreen(TDEScreen):
         Binding("f2", "toggle_explorer", "Toggle File Explorer"),
         Binding("f1", "toggle_startmenu", "Toggle Start Menu"),
         Binding("f5", "toggle_windowbar", "Toggle Task Bar"),
+        Binding("f9", "toggle_bg_animation", "Toggle Background Animation"),
         Binding("f12", "toggle_transparency", "Toggle Transparency"),
     ]
 
@@ -82,6 +83,9 @@ class MainScreen(TDEScreen):
     def action_toggle_transparency(self) -> None:
         self.app.ansi_color = not self.app.ansi_color
         self.app.push_screen(DummyScreen())
+        
+    def action_toggle_bg_animation(self) -> None:
+        self.shell_manager.action_toggle_bg_animation()
 
     # @on(ToggleTaskBar)
     def action_toggle_windowbar(self) -> None:

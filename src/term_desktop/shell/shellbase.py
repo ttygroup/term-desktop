@@ -253,6 +253,11 @@ class TDEShellSession(Widget):
     def action_toggle_startmenu(self) -> None:
         """Open the start menu / quick launcher."""
         self.query_one(StartMenu).toggle()
+        
+    def action_toggle_bg_animation(self) -> None:
+        """Toggle the background animation."""
+        desktop = self.query_one(Desktop)
+        desktop.toggle_bg_animation()
 
     ####################
     # ~ Other Events ~ #
